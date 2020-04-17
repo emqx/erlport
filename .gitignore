@@ -12,3 +12,5 @@ rebar.lock
 .rebar/
 ebin/
 *.iml
+classes/
+.DS_Store

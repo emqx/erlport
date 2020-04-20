@@ -59,7 +59,7 @@ public class Port extends Object {
         out.write(bytes, 0, len);
         out.flush();
 
-        System.err.printf("Write: %s\n", Arrays.toString(bytes));
+        //System.err.printf("Write: %s\n", Arrays.toString(bytes));
         return len;
     }
 

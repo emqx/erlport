@@ -52,13 +52,12 @@ class Response extends Object {
             resp.set(0, new Atom(type));
             resp.set(1, id);
             resp.set(2, result);
-            System.err.println(resp);
             return pack_tag_terms(resp);
         }
     }
 
     private byte[] pack_tag_terms(Object obj) {
-        System.err.println(obj);
+        //System.err.println(obj);
 
         // SMALL_INTEGER | INTEGER
         if (obj instanceof Integer) {

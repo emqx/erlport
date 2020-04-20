@@ -14,14 +14,11 @@ public class CLI {
 
         Options opts = new Options(args);
 
-        System.err.printf("Parsed: %s\n", opts.toString());
-
         Port port = new Port(opts);
 
         while(true) {
             try {
                 Request req = port.read();
-                System.err.printf("Received: %s\n", req.toString());
                 try {
                     if (req.type == RequestType.CALL) {
                         Class<?> clazz = Class.forName(req.classname.value);

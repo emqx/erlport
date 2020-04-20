@@ -17,7 +17,6 @@ erlport/Request.java \
 erlport/Response.java \
 erlport/Port.java \
 erlport/CLI.java \
-erlport/Main.java \
 
 JAVAC = javac
 

@@ -1,9 +1,9 @@
 package erlport;
 
+import java.io.*;
 import java.util.*;
 import java.lang.*;
 import java.lang.reflect.*;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import erlport.terms.*;
@@ -19,6 +19,7 @@ public class CLI {
         while(true) {
             try {
                 Request req = port.read();
+                //System.err.printf("Received: %s\n", req);
                 try {
                     if (req.type == RequestType.CALL) {
                         Class<?> clazz = Class.forName(req.classname.value);
@@ -41,6 +42,8 @@ public class CLI {
                     System.err.println(errDesc);
                     port.write(Response.failure(req.requestId, errDesc));
                 }
+            } catch (EOFException e) {
+                break;
             } catch (Exception e) {
                 Binary errDesc = Utils.stringToBinary(Utils.getStackTrace(e));
                 System.err.println(errDesc);

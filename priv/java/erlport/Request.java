@@ -64,8 +64,8 @@ public class Request extends Object {
     }
 
     private Object parse_tag_terms() throws Exception {
-        Integer tag = parse_unsigned(1).intValue();
-        //System.err.printf("Parsing tag %d...\n", tag);
+        Integer tag = parse_unsigned(1).intValue() & 0xff;
+        System.err.printf("Parsing tag %d...\n", tag);
 
         // SMALL_INTEGER
         if (tag == 97) {

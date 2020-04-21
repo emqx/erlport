@@ -14,3 +14,4 @@ ebin/
 *.iml
 classes/
 .DS_Store
+rebar3.crashdump

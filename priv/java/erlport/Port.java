@@ -44,6 +44,11 @@ public class Port extends Object {
     public Request read() throws Exception {
         int len = decode_packet_length(__read_data(opts.packet));
 
+        // eof
+        if (len == 0 ) {
+            throw new EOFException("end of stream");
+        }
+
         return new Request(__read_data(len));
     }
 
@@ -51,6 +56,7 @@ public class Port extends Object {
         byte[] b = new byte[n];
         in.read(b);
 
+        System.err.printf("READ: %s\n", Arrays.toString(b));
         return b;
     }
 
@@ -73,7 +79,7 @@ public class Port extends Object {
         int m = 0x01 << ((bytes.length - 1)*8);
         int c = 0;
         for (byte i: bytes) {
-            c += i * m;
+            c += (i & 0xff) * m;
             m = m >> 8;
         }
         return c;

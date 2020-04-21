@@ -11,10 +11,16 @@ public class Binary {
         this.raw = bytes;
     }
 
+    public Binary(String str) {
+        this.raw = str.getBytes();
+    }
+
     @Override
     public String toString() {
-        return new String(raw);
+        try {
+            return new String(raw);
+        } catch (Exception e) {
+            return Arrays.toString(raw);
+        }
     }
 }
-
-

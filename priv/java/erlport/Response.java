@@ -170,12 +170,13 @@ class Response extends Object {
                     temp.add(eBytes);
                     size += eBytes.length;
                 }
-                ByteBuffer bb = ByteBuffer.allocate(5 + size);
+                ByteBuffer bb = ByteBuffer.allocate(6 + size);
                 bb.put((byte) 108);
                 bb.put(pack_unsigned(temp.size(), 4));
                 for(byte[] eBytes: temp) {
                     bb.put(eBytes);
                 }
+                bb.put((byte) 106);
                 return bb.array();
             }
         }

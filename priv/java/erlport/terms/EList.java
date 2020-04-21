@@ -13,6 +13,17 @@ public class EList extends Object {
         elements = new ArrayList<Object>();
     }
 
+    public EList(List<Object> objs) {
+        elements = new ArrayList(objs);
+    }
+
+    public EList(Object[] objs) {
+        elements = new ArrayList();
+        for(Object o: objs) {
+            elements.add(o);
+        }
+    }
+
     public void add(Object e) {
         elements.add(e);
     }

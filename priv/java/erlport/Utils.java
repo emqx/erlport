@@ -36,4 +36,32 @@ class Utils {
         }
         return sw.toString();
     }
+
+    static Object decode_opaque_object(Tuple t) throws Exception {
+
+        if (t.get(1) instanceof Atom && ((Atom) t.get(1)).value.equals("java")) {
+
+            byte[] bytes = ((Binary) t.get(2)).raw;
+
+            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
+            ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
+
+            return objectInputStream.readObject();
+        }
+
+        return t;
+    }
+
+    static Tuple encode_opaque_object(Object obj) throws Exception {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+
+        objectOutputStream.writeObject(obj);
+        objectOutputStream.flush();
+
+        return Tuple.three(
+                   new Atom("$erlport.opaque"),
+                   new Atom("java"),
+                   new Binary(byteArrayOutputStream.toByteArray()));
+    }
 }

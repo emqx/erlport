@@ -13,6 +13,6 @@ public class Atom extends Object {
 
     @Override
     public String toString() {
-        return value;
+        return String.format("Atom(\"%s\")", value);
     }
 }

@@ -3,13 +3,13 @@ package erlport;
 import java.util.*;
 import java.lang.*;
 import java.nio.*;
-
+import java.math.*;
 
 import erlport.terms.*;
 
 enum RequestType {
-    CALL ("C"),    // 'C'
-    MESSAGE ("M");    // 'M'
+    CALL    ("C"),
+    MESSAGE ("M");
 
     private String value;
 
@@ -18,8 +18,10 @@ enum RequestType {
     }
 }
 
-// Request structure for erlport
 public class Request extends Object {
+
+    // {'C', Id, Module, Function, Args}
+    // {'M', Terms}
 
     // ----- ParseState
     private Integer __pos;
@@ -44,10 +46,9 @@ public class Request extends Object {
         if (__bytes[__pos++] == -125) { // 131 ===> Term
             __rawTerm = parse_tag_terms();
         } else if (__bytes[0] == 80) { // 80 ===> Compressed
-            // TODO: Un-compressed
+            // TODO:
         }
 
-        //  FIXME: May crash?
         Tuple request = (Tuple) __rawTerm;
         Atom type = (Atom) request.get(0);
         if (type.value.equals("C")) {
@@ -65,7 +66,7 @@ public class Request extends Object {
 
     private Object parse_tag_terms() throws Exception {
         Integer tag = parse_unsigned(1).intValue() & 0xff;
-        System.err.printf("Parsing tag %d...\n", tag);
+        //System.err.printf("Parsing tag %d...\n", tag);
 
         // SMALL_INTEGER
         if (tag == 97) {
@@ -106,13 +107,30 @@ public class Request extends Object {
 
         // SMALL_TUPLE | LARGE_TUPLE
         if (tag == 104 || tag == 105) {
-            // FIXME: 4? overflow?
             Integer len = parse_unsigned(tag == 104 ? 1 : 4).intValue();
             Tuple t = new Tuple(len);
             for(Integer i=0; i<len; i++) {
                 t.set(i, parse_tag_terms());
             }
+
+            if (t.elements.length == 3
+                    && t.get(0) instanceof Atom
+                    && ((Atom) t.get(0)).value.equals("$erlport.opaque")) {
+                return Utils.decode_opaque_object(t);
+            }
             return t;
+        }
+
+        // MAP
+        if (tag == 116) {
+            Integer len = parse_unsigned(4).intValue();
+
+            Map map = new HashMap<Object, Object>();
+            for(Integer i=0; i<len; i++) {
+                map.put(parse_tag_terms(), parse_tag_terms());
+            }
+
+            return map;
         }
 
         // NIL
@@ -144,10 +162,20 @@ public class Request extends Object {
             return parse_binary(len);
         }
 
+        // SMALL_BIG | LARGE_BIG
+        if (tag == 110 || tag == 111) {
+            Integer len = parse_unsigned(tag == 110 ? 1 : 4).intValue();
+            return parse_biginteger(len);
+        }
+
         // ATOM_UTF8 | ATOM
         if (tag == 118 || tag == 100 ) {
             Integer len = parse_unsigned(2).intValue();
-            return new Atom(parse_string(len));
+            String atomStr = parse_string(len);
+            if ( atomStr.equals("true") ||  atomStr.equals("false") ) {
+                return new Boolean(atomStr);
+            }
+            return new Atom(atomStr);
         }
 
         // SMALL_ATOM_UTF8 | SMALL_ATOM
@@ -163,6 +191,15 @@ public class Request extends Object {
             Long creation = parse_unsigned(1);
             return new Reference(node, id, creation);
         }
+
+        // TODO:
+        // NEW_REFERENCE 114
+        // NEWER_REFERENCE 90
+        // FUN 117
+        // NEW_FUN 112
+        // EXPORT 113
+        // BIT_BINARY 77
+        //
 
         return null;
     }
@@ -180,7 +217,7 @@ public class Request extends Object {
     private Long parse_unsigned(Integer len) {
         Long c = 0L;
         for (int i=1; i<=len; i++,__pos++) {
-            c = c | (__bytes[__pos] << ((len-i)*8));
+            c = c | ((__bytes[__pos] & 0xff) << ((len-i)*8));
         }
         return (c & 0x00000000ffffffff);
     }
@@ -207,6 +244,25 @@ public class Request extends Object {
         Binary b = new Binary(Arrays.copyOfRange(__bytes, __pos, __pos+len));
         __pos = __pos + len;
         return b;
+    }
+
+    private BigInteger parse_biginteger(Integer len) {
+
+        Integer sign = parse_unsigned(1).intValue();
+
+        if (sign == 0) {
+            sign = 1;
+        } else {
+            sign = -1;
+        }
+
+        byte[] bytes = new byte[len];
+        for(Integer i=0; i<len; i++) {
+            bytes[len-i-1] = __bytes[__pos+i];
+        }
+
+        __pos = __pos + len;
+        return new BigInteger(sign, bytes);
     }
 
     private String parse_string(Integer len) {

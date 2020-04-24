@@ -25,11 +25,9 @@ class Response extends Object {
     }
 
     public static Response stop(Object error) {
-        // TODO   
         return new Response("e", error);
     }
 
-    // FIXME: Id -> Integer ?? Big-Integer ?
     private Response(String type, Integer id, Object result) {
         this.type = type;
         this.id = id;
@@ -41,7 +39,7 @@ class Response extends Object {
         this.result = result;
     }
 
-    public byte[] pack() {
+    public byte[] pack() throws Exception {
         if (id == null) {
             Tuple resp = new Tuple(2);
             resp.set(0, new Atom(type));
@@ -56,7 +54,7 @@ class Response extends Object {
         }
     }
 
-    private byte[] pack_tag_terms(Object obj) {
+    private byte[] pack_tag_terms(Object obj) throws Exception {
         //System.err.println(obj);
 
         // SMALL_INTEGER | INTEGER
@@ -157,6 +155,28 @@ class Response extends Object {
             return bb.array();
         }
 
+        // Map
+        if (obj instanceof Map) {
+            Map<Object, Object> map = (Map<Object, Object>) obj;
+            ArrayList<byte[]> temp = new ArrayList<byte[]>();
+            Integer size = 0;
+            for (Map.Entry<Object, Object> entry: map.entrySet()) {
+                byte[] keyBytes = pack_tag_terms(entry.getKey());
+                byte[] valBytes = pack_tag_terms(entry.getValue());
+                temp.add(keyBytes);
+                temp.add(valBytes);
+                size = size + keyBytes.length + valBytes.length;
+            }
+
+            ByteBuffer bb = ByteBuffer.allocate(5 + size);
+            bb.put((byte) 116);
+            bb.put(pack_unsigned(temp.size(), 4));
+            for(byte[] eBytes: temp) {
+                bb.put(eBytes);
+            }
+            return bb.array();
+        }
+
         // NIL | LIST (EList)
         if (obj instanceof EList) {
             EList elist = (EList) obj;
@@ -237,7 +257,20 @@ class Response extends Object {
             // TODO:
         }
 
-        return new byte[]{};
+        // Directly types
+
+        // Boolean => Atom
+        if (obj instanceof Boolean) {
+            Boolean b = (Boolean) obj;
+            if (b) {
+                return pack_tag_terms(new Atom("true"));
+            } else {
+                return pack_tag_terms(new Atom("false"));
+            }
+        }
+
+        // OpaqueObject => {'$erlport.opaque', java, Bytes}
+        return pack_tag_terms(Utils.encode_opaque_object(obj));
     }
 
     // Value: 0~2^31-1;

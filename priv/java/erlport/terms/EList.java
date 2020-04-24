@@ -37,5 +37,3 @@ public class EList extends Object {
         return elements.toString();
     }
 }
-
-

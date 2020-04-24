@@ -21,7 +21,7 @@ public class Port extends Object {
             this.in = System.in;
             this.out = System.out;
         } else {
-            // FIXME: 
+            // TODO:
         }
     }
 
@@ -53,10 +53,23 @@ public class Port extends Object {
     }
 
     private byte[] __read_data(int n) throws IOException {
-        byte[] b = new byte[n];
-        in.read(b);
 
-        System.err.printf("READ: %s\n", Arrays.toString(b));
+        if (n == 0) {
+            return new byte[]{};
+        }
+
+        byte[] b = new byte[n];
+
+        int done = 0;
+        while (done < n) {
+            int got = in.read(b, done, n-done);
+            if (got == -1) {
+                throw new EOFException("end of stream");
+            }
+            done = done + got;
+        }
+
+        //System.err.printf("Got: %d, bytes: %s\n", b.length, Arrays.toString(b));
         return b;
     }
 

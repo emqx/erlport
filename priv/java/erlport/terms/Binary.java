@@ -17,10 +17,13 @@ public class Binary {
 
     @Override
     public String toString() {
+        if (raw.length == 0 ) {
+            return "Binary([])";
+        }
         try {
-            return new String(raw);
+            return String.format("Binary(\"%s\")", new String(raw));
         } catch (Exception e) {
-            return Arrays.toString(raw);
+            return String.format("Binary(%s)", Arrays.toString(raw));
         }
     }
 }

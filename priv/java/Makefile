@@ -7,7 +7,6 @@ SOURCE_FILES = \
 erlport/terms/Tag.java \
 erlport/terms/Atom.java \
 erlport/terms/Binary.java \
-erlport/terms/EList.java \
 erlport/terms/Pid.java \
 erlport/terms/Port.java \
 erlport/terms/Reference.java \

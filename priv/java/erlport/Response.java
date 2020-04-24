@@ -177,15 +177,15 @@ class Response extends Object {
             return bb.array();
         }
 
-        // NIL | LIST (EList)
-        if (obj instanceof EList) {
-            EList elist = (EList) obj;
-            if (elist.elements.size() == 0) {
+        // NIL | LIST (List)
+        if (obj instanceof List) {
+            List list = (List) obj;
+            if (list.size() == 0) {
                 return new byte[]{ (byte) 106, (byte) 106};
             } else {
                 ArrayList<byte[]> temp = new ArrayList<byte[]>();
                 Integer size = 0;
-                for(Object e: elist.elements) {
+                for(Object e: list) {
                     byte[] eBytes = pack_tag_terms(e);
                     temp.add(eBytes);
                     size += eBytes.length;

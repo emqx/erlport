@@ -56,7 +56,7 @@ public class Request extends Object {
             this.requestId = (Integer) request.get(1);
             this.classname = (Atom) request.get(2);
             this.functname = (Atom) request.get(3);
-            this.args      = ((EList) request.get(4)).elements.toArray();
+            this.args      = ((List) request.get(4)).toArray();
 
         } else if (type.value.equals("M")) {
             this.type = RequestType.MESSAGE;
@@ -135,7 +135,7 @@ public class Request extends Object {
 
         // NIL
         if (tag == 106) {
-            return new EList();
+            return new ArrayList<Object>();
         }
 
         // STRING
@@ -147,11 +147,13 @@ public class Request extends Object {
         // LIST
         if (tag == 108) {
             Long len = parse_unsigned(4);
-            EList list = new EList();
+            List<Object> list = new ArrayList<Object>();
             for (Long i=0L; i<len; i++) {
                 list.add(parse_tag_terms());
             }
-            list.setTail(parse_tag_terms());
+
+            // drop tails
+            parse_tag_terms();
 
             return list;
         }

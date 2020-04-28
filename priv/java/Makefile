@@ -28,7 +28,7 @@ JFLAGS = -encoding UTF-8# -Xlint:unchecked
 vpath %.class classes
 vpath %.java src
 
-build: $(SOURCE_FILES:.java=.class)
+build: ensure_dirs $(SOURCE_FILES:.java=.class)
 
 # show help message by default
 help:
@@ -38,6 +38,9 @@ help:
 	@echo "make rebuild: rebuild project."
 	@echo "make run: run your app."
 	@echo "make jar: package your project into a executable jar."
+
+ensure_dirs:
+	@mkdir -p classes
 
 %.class: %.java
 	$(JAVAC) -cp classes -d classes $(JFLAGS) $<

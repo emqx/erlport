@@ -185,7 +185,7 @@ init_factory(#java_options{java=Java, java_path=JavaPath, use_stdio=UseStdio, pa
         Path = lists:concat([Java,
             % Binary STDIO
             %%" -u",
-            " --class-path ", JavaPath,
+            " -cp ", JavaPath,
             " erlport.CLI",
             " --packet=", Packet,
             " --", UseStdio,

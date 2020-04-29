@@ -1,6 +1,4 @@
-JAR_PKG = erlport.jar
-ENTRY_POINT = erlport.CLI
-RES_DIR = yes
+JAR_PKG = _pkgs/erlport.jar
 
 # Source files
 SOURCE_FILES = \
@@ -28,41 +26,25 @@ JFLAGS = -encoding UTF-8# -Xlint:unchecked
 vpath %.class classes
 vpath %.java src
 
+$(JAR_PKG):
+ifeq (,$(wildcard $(JAR_PKG)))
+	@make build
+	@jar cf $(JAR_PKG) -C classes .
+	@rm -rf classes
+	@echo "Successfully packing erlport.jar"
+endif
+
 build: ensure_dirs $(SOURCE_FILES:.java=.class)
 
-# show help message by default
-help:
-	@echo "make new: new project, create src, classes, res dirs."
-	@echo "make build: build project."
-	@echo "make clean: clear classes generated."
-	@echo "make rebuild: rebuild project."
-	@echo "make run: run your app."
-	@echo "make jar: package your project into a executable jar."
+rebuild: clean $(JAR_PKG)
 
 ensure_dirs:
+	@mkdir -p _pkgs
 	@mkdir -p classes
 
 %.class: %.java
 	$(JAVAC) -cp classes -d classes $(JFLAGS) $<
 
-rebuild: clean build
-
-new:
-ifeq ($(RES_DIR),yes)
-	mkdir -pv src classes res
-else
-	mkdir -pv src classes 
-endif
-
 clean:
-	rm -frv classes/*
-
-run:
-	java -cp classes $(ENTRY_POINT)
-
-jar:
-ifeq ($(RES_DIR),yes)
-	jar cvfe $(JAR_PKG) $(ENTRY_POINT)  -C classes . res
-else
-	jar cvfe $(JAR_PKG) $(ENTRY_POINT) -C classes .
-endif
+	@rm -rf classes/*
+	@rm -rf $(JAR_PKG)

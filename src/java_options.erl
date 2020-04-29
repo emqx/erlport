@@ -114,8 +114,7 @@ update_java_path(Env0, JavaPath0) ->
         {error, bad_name} ->
             {error, {not_found, "erlport/priv"}};
         PrivDir ->
-            %JavaDir = lists:concat([java, MajVersion]),
-            JavaDir = filename:join([java, "classes"]),
+            JavaDir = filename:join([java, "_pkgs", "erlport.jar"]),
             ErlPortPath = erlport_options:joinpath(PrivDir, JavaDir),
             {PathFromSetEnv, Env2} = extract_java_path(Env0, "", []),
             PathFromEnv = erlport_options:getenv("JAVAPATH"),

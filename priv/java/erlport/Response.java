@@ -75,7 +75,7 @@ class Response extends Object {
         if (obj instanceof BigInteger) {
             BigInteger bi = (BigInteger) obj;
             Integer sign = 0;
-            if (bi.signum() != 0) {
+            if (bi.signum() == -1) {
                 sign = 1;
                 bi = bi.abs();
             }

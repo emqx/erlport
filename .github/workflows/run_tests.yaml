@@ -9,11 +9,12 @@ jobs:
         runs-on: ubuntu-latest
 
         container:
-            image: erlang:20.1
+            image: erlang:22.1
 
         steps:
         - uses: actions/checkout@v1
         - name: Code Analysis
+          run: |
             make xref
             make dialyzer
         - name: Run tests

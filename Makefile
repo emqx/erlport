@@ -9,7 +9,8 @@ all: compile
 compile:
 	$(REBAR) compile
 
-clean: distclean
+clean:
+	$(REBAR) clean
 
 ct: compile
 	$(REBAR) as test ct -v --name emqx_exproto_ct@127.0.0.1
@@ -26,9 +27,20 @@ dialyzer:
 cover:
 	$(REBAR) cover
 
-distclean:
+distclean: clean
 	@rm -rf _build
 	@rm -f data/app.*.config data/vm.*.args rebar.lock
+
+compile-priv:
+	@for folder in $$(ls -1 priv); do \
+        (cd priv/$$folder; $(MAKE)) \
+    done
+	@mkdir -p ebin
+
+priv-clean:
+	@for folder in $$(ls -1 priv); do \
+        (cd priv/$$folder; $(MAKE) clean) \
+    done
 
 CUTTLEFISH_SCRIPT = _build/default/lib/cuttlefish/cuttlefish
 

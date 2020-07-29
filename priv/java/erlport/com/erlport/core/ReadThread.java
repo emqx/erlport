@@ -23,15 +23,6 @@ public class ReadThread extends Thread {
     static final ConcurrentHashMap<Integer, Object> requestStore = new ConcurrentHashMap<>();
     private Map<Class<?>, Object> classCache = new HashMap<>();
     private Channel channel;
-    private CallListener callListener;
-
-    public CallListener getCallListener() {
-        return callListener;
-    }
-
-    public void setCallListener(CallListener callListener) {
-        this.callListener = callListener;
-    }
 
     ReadThread(Channel channel) {
         setName("IOReadThread");
@@ -43,7 +34,6 @@ public class ReadThread extends Thread {
         for (; ; ) {
             try {
                 Request erlangRequest = channel.read();
-                System.err.println("InStream读到的数据:" + erlangRequest.toString());
                 try {
 
                     // Call
@@ -77,7 +67,6 @@ public class ReadThread extends Thread {
                         if (tuple.length() == 3) {
                             Integer id = (Integer) tuple.get(1);
                             UUID uuid = JPort.MAP.get(id);
-                            System.err.println("R 收到的消息 ID=:" + id + " UUID:" + uuid);
                             if (uuid != null) {
                                 synchronized (uuid) {
                                     requestStore.put(id, tuple.get(2));

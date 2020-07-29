@@ -63,8 +63,6 @@ public class Response   {
     }
 
     private byte[] pack_tag_terms(Object obj) throws Exception {
-        //System.err.println("<> pack_tag_terms <> "+obj.getClass().getName());
-
         // SMALL_INTEGER | INTEGER
         if (obj instanceof Integer) {
             Integer i = (Integer) obj;

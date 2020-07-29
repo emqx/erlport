@@ -1,6 +1,5 @@
 package com.erlport.core;
 
-import com.erlport.erlang.term.Atom;
 import com.erlport.msg.CallMessage;
 import com.erlport.proto.Channel;
 import com.erlport.proto.Options;
@@ -23,30 +22,25 @@ public class JPort {
      * @param args args
      */
     public static void start(String[] args) {
-        if (args.length < 4) {
-            System.exit(0);
-        }
         Options options = new Options(args);
         channel = new Channel(options);
         ReadThread readThread = new ReadThread(channel);
         executorService.execute(readThread);
-        System.err.println("<><><><> JPort started");
+        System.err.println("JPort started");
 
     }
 
     /**
-     *  synchronized call
+     * synchronized call
+     *
      * @param callMessage call msg
-     * @param timeout timeout
+     * @param timeout     timeout
      * @return result
      */
 
-    public static Object call(CallMessage callMessage, long timeout) {
+    public static Object call(CallMessage callMessage, long timeout) throws InterruptedException, ExecutionException, TimeoutException {
         Future<Object> future = executorService.submit(new WriteThread(channel, callMessage));
-        try {
-            return future.get(timeout, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            return new Atom("timout");
-        }
+        return future.get(timeout, TimeUnit.MILLISECONDS);
+
     }
 }

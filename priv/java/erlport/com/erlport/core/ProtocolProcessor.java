@@ -18,7 +18,6 @@ public class ProtocolProcessor {
 
     //--------------------------------------------------------------------------------
     public static byte[] serialize(Object obj) throws Exception {
-        // System.err.println("=ProtocolProcessor serialize class" + obj.getClass() + " " + obj);
 
         // SMALL_INTEGER | INTEGER
         if (obj instanceof Integer) {

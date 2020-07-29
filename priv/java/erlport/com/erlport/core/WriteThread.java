@@ -25,13 +25,12 @@ public class WriteThread implements Callable<Object> {
         channel.write(message);
         UUID uuid = java.util.UUID.randomUUID();
         JPort.MAP.put(message.getId(), uuid);
-        System.err.println("调用Call消息  ID=:" + message.getId() + " UUID:" + uuid);
 
         synchronized (uuid) {
-            System.err.println("开始等待结果通知:" + message.getId());
             uuid.wait(1000);
-            System.err.println("通知:返回值收到  ID=:" + ReadThread.requestStore.get(message.getId()));
-            return ReadThread.requestStore.get(message.getId());
+            Object o = ReadThread.requestStore.get(message.getId());
+            ReadThread.requestStore.remove(message.getId());
+            return o;
         }
     }
 }

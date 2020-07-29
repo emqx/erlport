@@ -49,11 +49,7 @@
 
 -type timer() :: undefined | reference().
 
--define(is_allowed_term(T), (is_atom(T) orelse is_number(T)
-    orelse is_binary(T))).
-
 -include("erlport.hrl").
-
 
 %%
 %% @doc Send data to port
@@ -86,19 +82,19 @@ encode_term(Term, Compressed) when is_integer(Compressed)
 
 -spec prepare_term(Term::term()) -> PreparedTerm::term().
 
-prepare_term(Term) ->
-    if
-        ?is_allowed_term(Term) ->
-            Term;
-        is_list(Term) ->
-            prepare_list(Term);
-        is_tuple(Term) ->
-            list_to_tuple(prepare_list(tuple_to_list(Term)));
-        true ->
-            <<131, Data/binary>> = term_to_binary(Term, [{minor_version, 1}]),
-            {'$erlport.opaque', erlang, Data}
-    end.
 
+prepare_term(T) when is_pid(T);
+                     is_atom(T);
+                     is_binary(T);
+                     is_number(T) ->
+     T;
+prepare_term(T) when is_list(T) ->
+    prepare_list(T);
+prepare_term(T) when is_tuple(T) ->
+    list_to_tuple(prepare_list(tuple_to_list(T)));
+prepare_term(T) ->
+    <<131, Data/binary>> = term_to_binary(T, [{minor_version, 1}]),
+    {'$erlport.opaque', erlang, Data}.
 %%
 %% @doc Prepare Erlang list for encoding
 %%

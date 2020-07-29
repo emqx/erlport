@@ -37,7 +37,7 @@ all() ->
     [{group, python2}, {group, python3}, {group, java}].
 
 groups() ->
-    Cases = [t_echo, t_rev_call],
+    Cases = [t_rev_call],
     [{python2, Cases}, {python3, Cases}, {java, Cases}].
 
 init_per_suite(Cfg) ->
@@ -70,7 +70,8 @@ end_per_group(_GrpName, Cfg) ->
 %%--------------------------------------------------------------------
 %% Callback from other languages
 %%--------------------------------------------------------------------
-handle_call(Pid, Req) ->
+handle_call([Pid, Req]) ->
+    io:format("Pid is :~p Req is :~p~n", [Pid,Req]),
     Pid ! {resp, Req}.
 
 %%--------------------------------------------------------------------
@@ -87,15 +88,16 @@ t_echo(Cfg) ->
 t_rev_call(Cfg) ->
     Pid = proplists:get_value(pid, Cfg),
     Mod = proplists:get_value(mod, Cfg),
-    Arg = x,
-    _ = erlport:call(Pid, Mod, 'rev_call', [self(), Arg], []),
-    receive
-        {resp, Resp} ->
-            Arg = Resp
-    after
-        5000 ->
-            error(receiving_timeout)
-    end.
+    _ = erlport:call(Pid, Mod, 'rev_call', [self(), x], []),
+   receive
+       {resp, Resp} ->
+           % Arg = Resp
+           io:format("Call Result:~p~n", [Resp]),
+           Resp
+   after
+       5000 ->
+           error(receiving_timeout)
+   end.
 
 %%--------------------------------------------------------------------
 %% Utils

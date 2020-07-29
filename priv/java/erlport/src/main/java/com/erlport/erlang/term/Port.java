@@ -1,7 +1,4 @@
-package erlport.terms;
-
-import java.util.*;
-import java.lang.*;
+package com.erlport.erlang.term;
 
 public class Port extends Object {
     public Atom node;

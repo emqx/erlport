@@ -1,62 +1,22 @@
-package erlport;
+package com.erlport.core;
 
-import java.util.*;
-import java.lang.*;
-import java.nio.*;
-import java.math.*;
+import com.erlport.erlang.term.*;
+import com.erlport.proto.Utils;
 
-import erlport.terms.*;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
-class Response extends Object {
+/**
+ * @author wangwenhai
+ * @date 2020/7/15
+ */
+public class ProtocolProcessor {
 
-    // {'r', Id, Result}
-    // {'e', Id, Error}
-    // {'e', Error}
-    
-    String type;
-    Integer id;
-    Object result;
-
-    public static Response success(Integer id, Object result) {
-        return new Response("r", id, result);
-    }
-
-    public static Response failure(Integer id, Object error) {
-        return new Response("e", id, error);
-    }
-
-    public static Response stop(Object error) {
-        return new Response("e", error);
-    }
-
-    private Response(String type, Integer id, Object result) {
-        this.type = type;
-        this.id = id;
-        this.result = result;
-    }
-
-    private Response(String type, Object result) {
-        this.type = type;
-        this.result = result;
-    }
-
-    public byte[] pack() throws Exception {
-        if (id == null) {
-            Tuple resp = new Tuple(2);
-            resp.set(0, new Atom(type));
-            resp.set(1, result);
-            return pack_tag_terms(resp);
-        } else {
-            Tuple resp = new Tuple(3);
-            resp.set(0, new Atom(type));
-            resp.set(1, id);
-            resp.set(2, result);
-            return pack_tag_terms(resp);
-        }
-    }
-
-    private byte[] pack_tag_terms(Object obj) throws Exception {
-        //System.err.println(obj);
+    //--------------------------------------------------------------------------------
+    public static byte[] serialize(Object obj) throws Exception {
 
         // SMALL_INTEGER | INTEGER
         if (obj instanceof Integer) {
@@ -74,7 +34,7 @@ class Response extends Object {
         // SMALL_BIG | LARGE_BIG
         if (obj instanceof BigInteger) {
             BigInteger bi = (BigInteger) obj;
-            Integer sign = 0;
+            int sign = 0;
             if (bi.signum() == -1) {
                 sign = 1;
                 bi = bi.abs();
@@ -84,14 +44,14 @@ class Response extends Object {
 
             byte[] dest = new byte[len];    // little-endian
 
-            for(Integer i=0; i<len; i++) {
-                dest[len-i-1] = src[i];
+            for (Integer i = 0; i < len; i++) {
+                dest[len - i - 1] = src[i];
             }
 
             byte[] lenBytes = pack_unsigned(len, 4);
             byte[] signBytes = pack_unsigned(sign, 1);
 
-            ByteBuffer bb = ByteBuffer.allocate(6+len);
+            ByteBuffer bb = ByteBuffer.allocate(6 + len);
             bb.put((byte) 111);
             bb.put(lenBytes);
             bb.put(signBytes);
@@ -113,7 +73,7 @@ class Response extends Object {
         // PORT | NEW_PORT
         if (obj instanceof Port) {
             Port port = (Port) obj;
-            byte[] nodeBytes = pack_tag_terms(port.node);
+            byte[] nodeBytes = serialize(port.node);
             byte[] idBytes = pack_unsigned(port.id, 4);
             // Len??
             if (port.creation < 256 && port.creation >= 0) {
@@ -136,7 +96,7 @@ class Response extends Object {
         // PID | NEW_PID
         if (obj instanceof Pid) {
             Pid pid = (Pid) obj;
-            byte[] nodeBytes = pack_tag_terms(pid.node);
+            byte[] nodeBytes = serialize(pid.node);
             byte[] idBytes = pack_unsigned(pid.id, 4);
             byte[] serialBytes = pack_unsigned(pid.serial, 4);
             // Len??
@@ -160,17 +120,21 @@ class Response extends Object {
 
         // TUPLE | LARGE_TUPLE
         if (obj instanceof Tuple) {
+
             Tuple tuple = (Tuple) obj;
             ArrayList<byte[]> temp = new ArrayList<byte[]>();
-            Integer size = 0;
-            for(Object e: tuple.elements) {
-                byte[] eBytes = pack_tag_terms(e);
-                temp.add(eBytes);
-                size += eBytes.length;
+            int size = 0;
+            for (Object e : tuple.elements) {
+                if (e != null) {
+                    byte[] eBytes = serialize(e);
+                    temp.add(eBytes);
+                    size += eBytes.length;
+                }
+
             }
 
             ByteBuffer bb;
-            if (temp.size() < 256 && temp.size() >= 0) {
+            if (temp.size() < 256 && temp.size() >= 1) {
                 bb = ByteBuffer.allocate(2 + size);
                 bb.put((byte) 104);
                 bb.put(pack_unsigned(temp.size(), 1));
@@ -179,7 +143,7 @@ class Response extends Object {
                 bb.put((byte) 105);
                 bb.put(pack_unsigned(temp.size(), 4));
             }
-            for(byte[] eBytes: temp) {
+            for (byte[] eBytes : temp) {
                 bb.put(eBytes);
             }
             return bb.array();
@@ -187,12 +151,12 @@ class Response extends Object {
 
         // Map
         if (obj instanceof Map) {
-            Map<Object, Object> map = (Map<Object, Object>) obj;
-            ArrayList<byte[]> temp = new ArrayList<byte[]>();
-            Integer size = 0;
-            for (Map.Entry<Object, Object> entry: map.entrySet()) {
-                byte[] keyBytes = pack_tag_terms(entry.getKey());
-                byte[] valBytes = pack_tag_terms(entry.getValue());
+            Map<Object, Object> map = (Map) obj;
+            ArrayList<byte[]> temp = new ArrayList<>();
+            int size = 0;
+            for (Map.Entry<Object, Object> entry : map.entrySet()) {
+                byte[] keyBytes = serialize(entry.getKey());
+                byte[] valBytes = serialize(entry.getValue());
                 temp.add(keyBytes);
                 temp.add(valBytes);
                 size = size + keyBytes.length + valBytes.length;
@@ -201,7 +165,7 @@ class Response extends Object {
             ByteBuffer bb = ByteBuffer.allocate(5 + size);
             bb.put((byte) 116);
             bb.put(pack_unsigned(temp.size(), 4));
-            for(byte[] eBytes: temp) {
+            for (byte[] eBytes : temp) {
                 bb.put(eBytes);
             }
             return bb.array();
@@ -211,25 +175,49 @@ class Response extends Object {
         if (obj instanceof List) {
             List list = (List) obj;
             if (list.size() == 0) {
-                return new byte[]{ (byte) 106, (byte) 106};
+                return new byte[]{(byte) 106, (byte) 106};
             } else {
-                ArrayList<byte[]> temp = new ArrayList<byte[]>();
-                Integer size = 0;
-                for(Object e: list) {
-                    byte[] eBytes = pack_tag_terms(e);
+                ArrayList<byte[]> temp = new ArrayList<>();
+                int size = 0;
+                for (Object e : list) {
+                    byte[] eBytes = serialize(e);
                     temp.add(eBytes);
                     size += eBytes.length;
                 }
                 ByteBuffer bb = ByteBuffer.allocate(6 + size);
                 bb.put((byte) 108);
                 bb.put(pack_unsigned(temp.size(), 4));
-                for(byte[] eBytes: temp) {
+                for (byte[] eBytes : temp) {
                     bb.put(eBytes);
                 }
                 bb.put((byte) 106);
                 return bb.array();
             }
         }
+        // Objects[]
+        if (obj instanceof Object[]) {
+            Object[] list = (Object[]) obj;
+            if (list.length == 0) {
+                return new byte[]{(byte) 106, (byte) 106};
+            } else {
+                ArrayList<byte[]> temp = new ArrayList<>();
+                int size = 0;
+                for (Object e : list) {
+                    byte[] eBytes = serialize(e);
+                    temp.add(eBytes);
+                    size += eBytes.length;
+                }
+                ByteBuffer bb = ByteBuffer.allocate(6 + size);
+                bb.put((byte) 108);
+                bb.put(pack_unsigned(temp.size(), 4));
+                for (byte[] eBytes : temp) {
+                    bb.put(eBytes);
+                }
+                bb.put((byte) 106);
+                return bb.array();
+            }
+        }
+
 
         // STRING (String)
         if (obj instanceof String) {
@@ -238,7 +226,7 @@ class Response extends Object {
             byte[] strBytes = str.getBytes();
 
             ByteBuffer bb = ByteBuffer.allocate(3 + strBytes.length);
-            bb.put( (byte) 107);
+            bb.put((byte) 107);
             bb.put(pack_unsigned(strBytes.length, 2));
             bb.put(strBytes);
 
@@ -248,9 +236,9 @@ class Response extends Object {
         // BINARY (Binary)
         if (obj instanceof Binary) {
             Binary bin = (Binary) obj;
-        
+
             ByteBuffer bb = ByteBuffer.allocate(5 + bin.raw.length);
-            bb.put( (byte) 109);
+            bb.put((byte) 109);
             bb.put(pack_unsigned(bin.raw.length, 4));
             bb.put(bin.raw);
 
@@ -267,13 +255,13 @@ class Response extends Object {
             ByteBuffer bb;
             byte[] strBytes = atom.value.getBytes();
 
-            if (strBytes.length < 256 && strBytes.length >= 0) { // SMALL
-                bb = ByteBuffer.allocate(2+strBytes.length);
-                bb.put( (byte) 119);
+            if (strBytes.length < 256) { // SMALL
+                bb = ByteBuffer.allocate(2 + strBytes.length);
+                bb.put((byte) 119);
                 bb.put(pack_unsigned(strBytes.length, 1));
             } else {
-                bb = ByteBuffer.allocate(3+strBytes.length);
-                bb.put( (byte) 118);
+                bb = ByteBuffer.allocate(3 + strBytes.length);
+                bb.put((byte) 118);
                 bb.put(pack_unsigned(strBytes.length, 2));
             }
 
@@ -292,30 +280,26 @@ class Response extends Object {
         // Boolean => Atom
         if (obj instanceof Boolean) {
             Boolean b = (Boolean) obj;
-            if (b) {
-                return pack_tag_terms(new Atom("true"));
-            } else {
-                return pack_tag_terms(new Atom("false"));
-            }
+            return b ? serialize(new Atom("true")) : serialize(new Atom("false"));
         }
 
         // OpaqueObject => {'$erlport.opaque', java, Bytes}
-        return pack_tag_terms(Utils.encode_opaque_object(obj));
+        return serialize(Utils.encodeOpaqueObject(obj));
     }
 
     // Value: 0~2^31-1;
-    private byte[] pack_unsigned(Integer value, Integer len) {
+    private static byte[] pack_unsigned(Integer value, Integer len) {
         ByteBuffer bb = ByteBuffer.allocate(len);
-        for(Integer i=0; i<len; i++) {
-            bb.put( (byte) (value >> (8*(len-i-1)) & 0xff) );
+        for (Integer i = 0; i < len; i++) {
+            bb.put((byte) (value >> (8 * (len - i - 1)) & 0xff));
         }
         return bb.array();
     }
 
-    private byte[] pack_unsigned(Long value, Integer len) {
+    private static byte[] pack_unsigned(Long value, Integer len) {
         ByteBuffer bb = ByteBuffer.allocate(len);
-        for(Integer i=0; i<len; i++) {
-            bb.put( (byte) (value >> (8*(len-i-1)) & 0xff) );
+        for (Integer i = 0; i < len; i++) {
+            bb.put((byte) (value >> (8 * (len - i - 1)) & 0xff));
         }
         return bb.array();
     }

@@ -71,6 +71,7 @@ end_per_group(_GrpName, Cfg) ->
 %% Callback from other languages
 %%--------------------------------------------------------------------
 handle_call(Pid, Req) ->
+    io:format("Pid is :~p Req is :~p~n", [Pid,Req]),
     Pid ! {resp, Req}.
 
 %%--------------------------------------------------------------------
@@ -85,17 +86,20 @@ t_echo(Cfg) ->
     ok.
 
 t_rev_call(Cfg) ->
+  dbg:tracer(),dbg:p(all,call),
+  dbg:tpl(erlport, incoming_call,x),
     Pid = proplists:get_value(pid, Cfg),
     Mod = proplists:get_value(mod, Cfg),
-    Arg = x,
-    _ = erlport:call(Pid, Mod, 'rev_call', [self(), Arg], []),
-    receive
-        {resp, Resp} ->
-            Arg = Resp
-    after
-        5000 ->
-            error(receiving_timeout)
-    end.
+    _ = erlport:call(Pid, Mod, 'rev_call', [self(), x], []),
+   receive
+       {resp, Resp} ->
+           % Arg = Resp
+           io:format("Call Result:~p~n", [Resp]),
+           Resp
+   after
+       5000 ->
+           error(receiving_timeout)
+   end.
 
 %%--------------------------------------------------------------------
 %% Utils

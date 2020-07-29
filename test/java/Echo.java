@@ -1,15 +1,24 @@
 import java.io.*;
 import java.util.*;
-import erlport.terms.*;
+import com.erlport.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 public class Echo {
 
     public static Object echo(Object r) {
-        return r;
+      return r;
     }
 
-    public static void rev_call(Object pid, Object r) {
-        // TODO: erlang.call(Atom(b'erlport_SUITE'), Atom(b'handle_call'), [pid, r])
-        return;
+    public static Object rev_call(Object pid, Object x) throws Exception{
+      try {
+            System.err.println("Echo.java:Pid:" + pid + " X:" + x);
+            Object result = Erlang.call("erlport_SUITE", "handle_call", new Object[]{pid, x}, 5000);
+            System.err.println("Echo.java:Result:" + result);
+            return result;
+      } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            e.printStackTrace();
+      } 
+      return null;
     }
 }

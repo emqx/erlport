@@ -1,9 +1,6 @@
-package erlport.terms;
+package com.erlport.erlang.term;
 
-import java.util.*;
-import java.lang.*;
-
-public class Atom extends Object {
+public class Atom {
 
     public String value;
 

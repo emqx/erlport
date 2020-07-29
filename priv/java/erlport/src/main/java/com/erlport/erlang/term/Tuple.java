@@ -1,9 +1,8 @@
-package erlport.terms;
+package com.erlport.erlang.term;
 
-import java.util.*;
-import java.lang.*;
+import java.util.Arrays;
 
-public class Tuple extends Object {
+public class Tuple {
 
     public Object[] elements;
 
@@ -55,21 +54,8 @@ public class Tuple extends Object {
 
     @Override
     public String toString() {
-
-        if (elements.length == 0) {
-            return "Tuple({})";
-        }
-
-        StringBuilder sb = new StringBuilder("Tuple({");
-        for(Object e: elements) {
-            if (e != null) {
-                sb.append(e.toString() + ", ");
-            } else {
-                sb.append("null");
-            }
-        }
-        sb.delete(sb.length()-2, sb.length());
-        sb.append("})");
-        return sb.toString();
+        return "Tuple{" +
+                "elements=" + Arrays.toString(elements) +
+                '}';
     }
 }

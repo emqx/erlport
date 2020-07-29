@@ -300,7 +300,6 @@ handle_message({'e', Id, Error}, State) ->
 handle_message({'e', Error}, State) ->
     {stop, {message_handler_error, Error}, State};
 handle_message(Request, State) ->
-    io:format("erlport uplink message: ~p~n", [Request]),
     handle_incoming_message(Request, State).
 
 %%
@@ -363,7 +362,6 @@ send_request2({call, Module, Function, Args, _Options}, From, Timeout,
         when is_atom(Module) andalso is_atom(Function) andalso is_list(Args) ->
     Id = next_message_id(State),
     ReqM = {'C', Id, Module, Function, erlport_utils:prepare_list(Args)},
-    io:format("erlport downlink request: ~p~n", [ReqM]),
     Data = erlport_utils:encode_term(ReqM, Compressed),
     erlport_utils:send_request(From, Data, Id, State, Timeout);
 send_request2({message, Message}, From, Timeout, State=#state{

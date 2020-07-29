@@ -37,7 +37,7 @@ all() ->
     [{group, python2}, {group, python3}, {group, java}].
 
 groups() ->
-    Cases = [t_rev_call],
+    Cases = [t_echo, t_rev_call],
     [{python2, Cases}, {python3, Cases}, {java, Cases}].
 
 init_per_suite(Cfg) ->

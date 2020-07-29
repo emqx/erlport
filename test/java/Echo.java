@@ -1,15 +1,23 @@
 import java.io.*;
 import java.util.*;
-import erlport.terms.*;
+import com.emqx.erlang.term.*;
+import com.emqx.msg.CallMessage;
+import com.emqx.core.*;
 
 public class Echo {
 
     public static Object echo(Object r) {
-        return r;
+      return r;
     }
 
-    public static void rev_call(Object pid, Object r) {
-        // TODO: erlang.call(Atom(b'erlport_SUITE'), Atom(b'handle_call'), [pid, r])
-        return;
+    public static Object rev_call(Object pid, Object x) throws Exception{
+       CallMessage callMessage = new CallMessage();
+       callMessage.setModule(new Atom("erlport_SUITE"));
+       callMessage.setFunction(new Atom("handle_call"));
+       callMessage.setArgs(new Object[]{ new Object[]{pid, x}});
+       System.err.println("Echo.java 回调的参数: " + pid + " " + x);
+       Object result = JPort.call(callMessage, 1000);
+       System.err.println("Echo.java 回调的返回值: " + pid + " " + x);
+       return result;
     }
 }

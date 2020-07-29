@@ -34,11 +34,11 @@
 %%--------------------------------------------------------------------
 
 all() ->
-    [{group, python2}, {group, python3}, {group, java}].
+    [{group, python3}, {group, java}].
 
 groups() ->
     Cases = [t_echo, t_rev_call],
-    [{python2, Cases}, {python3, Cases}, {java, Cases}].
+    [{python3, Cases}, {java, Cases}].
 
 init_per_suite(Cfg) ->
     application:ensure_all_started(erlport),
@@ -48,9 +48,7 @@ end_per_suite(_) ->
     application:stop(erlport),
     ok.
 
-init_per_group(GrpName, Cfg)
-  when GrpName =:= python2;
-       GrpName =:= python3 ->
+init_per_group(GrpName = python3, Cfg) ->
     Opts = [{python, atom_to_list(GrpName)},
             {python_path, script_path(GrpName)}],
     {ok, Pid} = python:start(Opts),

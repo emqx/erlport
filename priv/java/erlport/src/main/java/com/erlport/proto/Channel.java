@@ -42,8 +42,6 @@ public class Channel {
         bb.put(encode_packet_length(body.length + 1, opts.packet));
         bb.put((byte) 131);
         bb.put(body);
-
-        System.err.println(resp);
         return writeData(bb.array());
     }
 
@@ -65,6 +63,8 @@ public class Channel {
             tuple.set(3, callMessage.getFunction());
             tuple.set(4, callMessage.getArgs());
             tuple.set(5, new Atom("L"));
+
+            //System.err.printf("Wrote tuple: %s\n", tuple);
             writeData(serialize(tuple));
         }
         if (message instanceof ResultMessage) {
@@ -73,9 +73,10 @@ public class Channel {
             tuple.set(0, resultMessage.getType());
             tuple.set(1, resultMessage.getResult());
             tuple.set(2,  new Atom("L"));
+
+            //System.err.printf("Wrote tuple: %s\n", tuple);
             writeData(serialize(tuple));
         }
-
     }
 
     /**
@@ -93,7 +94,6 @@ public class Channel {
         bb.put(bytes);
         return bb.array();
     }
-
 
     //--------------------------------------------------------------------------------------
 
@@ -134,7 +134,6 @@ public class Channel {
         int len = bytes.length;
         out.write(bytes, 0, len);
         out.flush();
-        System.err.println("Wrote: "  + Arrays.toString(bytes));
         return len;
     }
 

@@ -1,6 +1,7 @@
 package com.erlport.proto;
 
 import com.erlport.core.ProtocolProcessor;
+import com.erlport.erlang.term.Atom;
 import com.erlport.erlang.term.Tuple;
 import com.erlport.msg.CallMessage;
 import com.erlport.msg.Message;
@@ -11,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 
 public class Channel {
@@ -41,6 +43,7 @@ public class Channel {
         bb.put((byte) 131);
         bb.put(body);
 
+        System.err.println(resp);
         return writeData(bb.array());
     }
 
@@ -61,16 +64,16 @@ public class Channel {
             tuple.set(2, callMessage.getModule());
             tuple.set(3, callMessage.getFunction());
             tuple.set(4, callMessage.getArgs());
-            tuple.set(5, new Object[]{});
-            serializeAndWrite(tuple);
+            tuple.set(5, new Atom("L"));
+            writeData(serialize(tuple));
         }
         if (message instanceof ResultMessage) {
             ResultMessage resultMessage = new ResultMessage();
             tuple = new Tuple(3);
             tuple.set(0, resultMessage.getType());
             tuple.set(1, resultMessage.getResult());
-            tuple.set(2, new Object[]{});
-            serializeAndWrite(tuple);
+            tuple.set(2,  new Atom("L"));
+            writeData(serialize(tuple));
         }
 
     }
@@ -82,15 +85,13 @@ public class Channel {
      * @return
      * @throws Exception
      */
-    private void serializeAndWrite(Tuple tuple) throws Exception {
+    private byte[] serialize(Tuple tuple) throws Exception {
         byte[] bytes = ProtocolProcessor.serialize(tuple);
         ByteBuffer bb = ByteBuffer.allocate(opts.packet + 1 + bytes.length);
         bb.put(encode_packet_length(bytes.length + 1, opts.packet));
         bb.put((byte) 131);
         bb.put(bytes);
-        int len = bb.array().length;
-        out.write(bb.array(), 0, len);
-        out.flush();
+        return bb.array();
     }
 
 
@@ -119,7 +120,7 @@ public class Channel {
         while (done < n) {
             int got = in.read(b, done, n - done);
             if (got == -1) {
-                throw new EOFException("end of stream");
+                throw new EOFException("Read end of stream");
             }
 
             done = done + got;
@@ -133,6 +134,7 @@ public class Channel {
         int len = bytes.length;
         out.write(bytes, 0, len);
         out.flush();
+        System.err.println("Wrote: "  + Arrays.toString(bytes));
         return len;
     }
 

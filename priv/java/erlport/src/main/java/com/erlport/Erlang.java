@@ -4,8 +4,7 @@ import com.erlport.core.JPort;
 import com.erlport.erlang.term.Atom;
 import com.erlport.msg.CallMessage;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 /**
  * @author wangwenhai
@@ -22,7 +21,7 @@ public class Erlang {
      * @throws ExecutionException   e
      * @throws TimeoutException     e
      */
-    public static Object call(String m, String f, Object[] args, long timeout) throws InterruptedException, ExecutionException, TimeoutException {
+    public static Object call(String m, String f, Object[] args, long timeout) throws Exception {
         CallMessage callMessage = new CallMessage();
         callMessage.setModule(new Atom(m));
         callMessage.setFunction(new Atom(f));

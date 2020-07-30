@@ -18,8 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @date 2020/7/11
  */
 public class ReadThread extends Thread {
-    static final ConcurrentHashMap<Integer, Object> requestStore = new ConcurrentHashMap<>();
-    private Map<Class<?>, Object> classCache = new HashMap<>();
+    private ConcurrentHashMap<Class<?>, Object> classCache = new ConcurrentHashMap<>();
     private Channel channel;
 
     ReadThread(Channel channel) {
@@ -31,45 +30,48 @@ public class ReadThread extends Thread {
     public void run() {
         for (; ; ) {
             try {
-                Request erlangRequest = channel.read();
+                Request request = channel.read();
                 try {
-                    if (erlangRequest.type == RequestType.CALL) {
-                        Class<?> clazz = Class.forName(erlangRequest.classname.value);
+                    System.err.println("Request :" + request.rawTerm);
+
+                    if (request.type == RequestType.CALL) {
+                        Class<?> clazz = Class.forName(request.classname.value);
                         Object instance = classCache.get(clazz);
                         if (instance == null) {
                             instance = clazz.newInstance();
                             classCache.put(clazz, instance);
                         }
-                        Class<?>[] classArgs = new Class[erlangRequest.args.length];
+                        Class<?>[] classArgs = new Class[request.args.length];
                         Arrays.fill(classArgs, Object.class);
-                        Method method = clazz.getMethod(erlangRequest.methodName.value, classArgs);
-                        Object result = method.invoke(instance, erlangRequest.args);
+                        Method method = clazz.getMethod(request.methodName.value, classArgs);
+                        Object result = method.invoke(instance, request.args);
 
                         if (result == null) {
                             result = new Atom("ok");
                         }
-                        channel.write(Response.success(erlangRequest.requestId, result));
-//                    } else if (erlangRequest.type == RequestType.MESSAGE) {
-//                        // TODO
-//                    } else if (erlangRequest.type == RequestType.ERROR) {
-                        // TODO
-                    } else if (erlangRequest.type == RequestType.RESULT) {
-                        Tuple tuple = (Tuple) erlangRequest.rawTerm;
+                        channel.write(Response.success(request.requestId, result));
+
+                    } else if (request.type == RequestType.RESULT) {
+                        // [type, Id, Result]
+                        // [Atom("r"), 2, Tuple{elements=[Atom("resp"), Atom("x")]}]
+
+                        Tuple tuple = (Tuple) request.rawTerm;
                         if (tuple.length() == 3) {
                             Integer id = (Integer) tuple.get(1);
-                            UUID uuid = JPort.MAP.get(id);
-                            if (uuid != null) {
-                                synchronized (uuid) {
-                                    requestStore.put(id, tuple.get(2));
-                                    uuid.notify();
+                            if (JPort.REQUEST_MAP.get(id) != null) {
+                                JPort.RESULT_MAP.put(id, tuple.get(2));
+                                System.err.println("X :" + id + " Lock:" + JPort.REQUEST_MAP.get(id).toString());
+                                synchronized (JPort.REQUEST_MAP.get(id)) {
+                                    JPort.REQUEST_MAP.get(id).notifyAll();
                                 }
+                                System.err.println("Y :" + id + " Result :" + JPort.RESULT_MAP.get(id));
                             }
                         }
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
                     Binary errDesc = Utils.stringToBinary(Utils.getStackTrace(e));
-                    channel.write(Response.failure(erlangRequest.requestId, errDesc));
+                    channel.write(Response.failure(request.requestId, errDesc));
                 }
             } catch (Exception e) {
                 e.printStackTrace();

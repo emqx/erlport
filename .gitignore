@@ -15,3 +15,4 @@ ebin/
 classes/
 .DS_Store
 rebar3.crashdump
+priv/java/erlport/target

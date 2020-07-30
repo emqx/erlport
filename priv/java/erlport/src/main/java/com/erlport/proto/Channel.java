@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 
 public class Channel {
@@ -72,7 +71,7 @@ public class Channel {
             tuple = new Tuple(3);
             tuple.set(0, resultMessage.getType());
             tuple.set(1, resultMessage.getResult());
-            tuple.set(2,  new Atom("L"));
+            tuple.set(2, new Atom("L"));
 
             //System.err.printf("Wrote tuple: %s\n", tuple);
             writeData(serialize(tuple));
@@ -102,7 +101,7 @@ public class Channel {
 
         // eof
         if (len == 0) {
-            throw new EOFException("end of stream");
+            return null;
         }
 
         return new Request(__read_data(len));
@@ -122,7 +121,6 @@ public class Channel {
             if (got == -1) {
                 throw new EOFException("Read end of stream");
             }
-
             done = done + got;
         }
 

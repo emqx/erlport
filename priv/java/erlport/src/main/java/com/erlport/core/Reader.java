@@ -5,25 +5,20 @@ import com.erlport.erlang.term.Binary;
 import com.erlport.erlang.term.Tuple;
 import com.erlport.proto.*;
 
-import java.awt.*;
 import java.io.EOFException;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author wangwenhai
  * @date 2020/7/11
  */
-public class ReadThread extends Thread {
+public class Reader extends Thread {
     private ConcurrentHashMap<Class<?>, Object> classCache = new ConcurrentHashMap<>();
     private Channel channel;
 
-    ReadThread(Channel channel) {
+    Reader(Channel channel) {
         setName("IOReadThread");
         this.channel = channel;
     }
@@ -32,10 +27,11 @@ public class ReadThread extends Thread {
     public void run() {
         for (; ; ) {
             try {
-                //System.err.println("[JAVA] try read a message\n");
                 Request request = channel.read();
-                //System.err.println("[JAVA] Read:" + request + "\n");
                 try {
+                    if (request == null) {
+                        continue;
+                    }
                     if (request.type == RequestType.CALL) {
                         Class<?> clazz = Class.forName(request.classname.value);
                         Object instance = classCache.get(clazz);
@@ -48,25 +44,17 @@ public class ReadThread extends Thread {
                         Method method = clazz.getMethod(request.methodName.value, classArgs);
 
                         Object finalInstance = instance;
-                        new Thread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Object result = null;
-                                try {
-                                    result = method.invoke(finalInstance, request.args);
-                                    if (result == null) {
-                                        result = new Atom("ok");
-                                    }
-                                    channel.write(Response.success(request.requestId, result));
-                                } catch (IllegalAccessException e) {
-                                    e.printStackTrace();
-                                } catch (InvocationTargetException e) {
-                                    e.printStackTrace();
-                                } catch (Exception e) {
-                                    e.printStackTrace();
+                        JPort.executorService.execute(() -> {
+                            try {
+                                Object result = method.invoke(finalInstance, request.args);
+                                if (result == null) {
+                                    result = new Atom("ok");
                                 }
+                                channel.write(Response.success(request.requestId, result));
+                            } catch (Exception e) {
+                                e.printStackTrace();
                             }
-                        }).start();
+                        });
 
                     } else if (request.type == RequestType.RESULT) {
                         // [type, Id, Result]
@@ -77,11 +65,9 @@ public class ReadThread extends Thread {
                             Integer id = (Integer) tuple.get(1);
                             if (JPort.REQUEST_MAP.get(id) != null) {
                                 JPort.RESULT_MAP.put(id, tuple.get(2));
-                                //System.err.println("X :" + id + " Lock:" + JPort.REQUEST_MAP.get(id).toString());
                                 synchronized (JPort.REQUEST_MAP.get(id)) {
                                     JPort.REQUEST_MAP.get(id).notifyAll();
                                 }
-                                //System.err.println("Y :" + id + " Result :" + JPort.RESULT_MAP.get(id));
                             }
                         }
                     }
@@ -90,17 +76,19 @@ public class ReadThread extends Thread {
                     Binary errDesc = Utils.stringToBinary(Utils.getStackTrace(e));
                     channel.write(Response.failure(request.requestId, errDesc));
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                Binary errDesc = Utils.stringToBinary(Utils.getStackTrace(e));
-                if (e instanceof EOFException) {
-                    System.exit(0);
-                }
+            } catch (Exception e1) {
+                e1.printStackTrace();
+                Binary errDesc = Utils.stringToBinary(Utils.getStackTrace(e1));
                 try {
                     channel.write(Response.stop(errDesc));
                 } catch (Exception e2) {
-                    // Binary errDesc2 = Utils.stringToBinary(Utils.getStackTrace(e2));
+                    e2.printStackTrace();
                 }
+
+                if (e1 instanceof EOFException) {
+                    System.exit(0);
+                }
+
             }
         }
 

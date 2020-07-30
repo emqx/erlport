@@ -26,7 +26,7 @@ public class Utils {
         return sw.toString();
     }
 
-    public static Object decodeOpaqueObject(Tuple t) throws Exception {
+    static Object decodeOpaqueObject(Tuple t) throws Exception {
 
         if (t.get(1) instanceof Atom && ((Atom) t.get(1)).value.equals("java")) {
 

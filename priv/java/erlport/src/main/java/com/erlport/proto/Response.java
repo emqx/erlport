@@ -10,18 +10,29 @@ import java.util.Map;
 
 /**
  * Type:
- *  Response: {'r', Id, Result}
- *    -Error : {'e', Id, Error}
- *    -Error : {'e', Error}
+ * Response: {'r', Id, Result}
+ * -Error : {'e', Id, Error}
+ * -Error : {'e', Error}
  */
-public class Response   {
+public class Response {
 
-    String type;
-    Integer responseId;
-    Object result;
+    private String type;
+    private Integer responseId;
+    private Object result;
 
-    public static Response of(Integer responseId, Object result){
-        return new Response("r", responseId,  result);
+    private Response(String type, Integer responseId, Object result) {
+        this.type = type;
+        this.responseId = responseId;
+        this.result = result;
+    }
+
+    private Response(String type, Object result) {
+        this.type = type;
+        this.result = result;
+    }
+
+    public static Response of(Integer responseId, Object result) {
+        return new Response("r", responseId, result);
     }
 
     public static Response success(Integer responseId, Object result) {
@@ -34,17 +45,6 @@ public class Response   {
 
     public static Response stop(Object error) {
         return new Response("e", error);
-    }
-
-    private Response(String type, Integer responseId, Object result) {
-        this.type = type;
-        this.responseId = responseId;
-        this.result = result;
-    }
-
-    private Response(String type, Object result) {
-        this.type = type;
-        this.result = result;
     }
 
     byte[] pack() throws Exception {
@@ -89,14 +89,14 @@ public class Response   {
 
             byte[] dest = new byte[len];    // little-endian
 
-            for(Integer i=0; i<len; i++) {
-                dest[len-i-1] = src[i];
+            for (Integer i = 0; i < len; i++) {
+                dest[len - i - 1] = src[i];
             }
 
             byte[] lenBytes = pack_unsigned(len, 4);
             byte[] signBytes = pack_unsigned(sign, 1);
 
-            ByteBuffer bb = ByteBuffer.allocate(6+len);
+            ByteBuffer bb = ByteBuffer.allocate(6 + len);
             bb.put((byte) 111);
             bb.put(lenBytes);
             bb.put(signBytes);
@@ -168,7 +168,7 @@ public class Response   {
             Tuple tuple = (Tuple) obj;
             ArrayList<byte[]> temp = new ArrayList<>();
             int size = 0;
-            for(Object e: tuple.elements) {
+            for (Object e : tuple.elements) {
                 byte[] eBytes = pack_tag_terms(e);
                 temp.add(eBytes);
                 size += eBytes.length;
@@ -184,7 +184,7 @@ public class Response   {
                 bb.put((byte) 105);
                 bb.put(pack_unsigned(temp.size(), 4));
             }
-            for(byte[] eBytes: temp) {
+            for (byte[] eBytes : temp) {
                 bb.put(eBytes);
             }
             return bb.array();
@@ -192,10 +192,10 @@ public class Response   {
 
         // Map
         if (obj instanceof Map) {
-            Map<Object, Object> map = (Map) obj;
+            Map<Object, Object> map = ( Map<Object, Object>) obj;
             ArrayList<byte[]> temp = new ArrayList<>();
             int size = 0;
-            for (Map.Entry<Object, Object> entry: map.entrySet()) {
+            for (Map.Entry  entry : map.entrySet()) {
                 byte[] keyBytes = pack_tag_terms(entry.getKey());
                 byte[] valBytes = pack_tag_terms(entry.getValue());
                 temp.add(keyBytes);
@@ -206,7 +206,7 @@ public class Response   {
             ByteBuffer bb = ByteBuffer.allocate(5 + size);
             bb.put((byte) 116);
             bb.put(pack_unsigned(temp.size(), 4));
-            for(byte[] eBytes: temp) {
+            for (byte[] eBytes : temp) {
                 bb.put(eBytes);
             }
             return bb.array();
@@ -216,11 +216,11 @@ public class Response   {
         if (obj instanceof List) {
             List list = (List) obj;
             if (list.size() == 0) {
-                return new byte[]{ (byte) 106, (byte) 106};
+                return new byte[]{(byte) 106, (byte) 106};
             } else {
                 ArrayList<byte[]> temp = new ArrayList<byte[]>();
                 int size = 0;
-                for(Object e: list) {
+                for (Object e : list) {
                     byte[] eBytes = pack_tag_terms(e);
                     temp.add(eBytes);
                     size += eBytes.length;
@@ -228,7 +228,7 @@ public class Response   {
                 ByteBuffer bb = ByteBuffer.allocate(6 + size);
                 bb.put((byte) 108);
                 bb.put(pack_unsigned(temp.size(), 4));
-                for(byte[] eBytes: temp) {
+                for (byte[] eBytes : temp) {
                     bb.put(eBytes);
                 }
                 bb.put((byte) 106);
@@ -266,7 +266,7 @@ public class Response   {
             byte[] strBytes = str.getBytes();
 
             ByteBuffer bb = ByteBuffer.allocate(3 + strBytes.length);
-            bb.put( (byte) 107);
+            bb.put((byte) 107);
             bb.put(pack_unsigned(strBytes.length, 2));
             bb.put(strBytes);
 
@@ -276,9 +276,9 @@ public class Response   {
         // BINARY (Binary)
         if (obj instanceof Binary) {
             Binary bin = (Binary) obj;
-        
+
             ByteBuffer bb = ByteBuffer.allocate(5 + bin.raw.length);
-            bb.put( (byte) 109);
+            bb.put((byte) 109);
             bb.put(pack_unsigned(bin.raw.length, 4));
             bb.put(bin.raw);
 
@@ -295,22 +295,22 @@ public class Response   {
 
             if (atom.coder.equals("UTF-8")) {
                 if (strBytes.length < 256) { // SMALL
-                    bb = ByteBuffer.allocate(2+strBytes.length);
-                    bb.put( (byte) 119);
+                    bb = ByteBuffer.allocate(2 + strBytes.length);
+                    bb.put((byte) 119);
                     bb.put(pack_unsigned(strBytes.length, 1));
                 } else {
-                    bb = ByteBuffer.allocate(3+strBytes.length);
-                    bb.put( (byte) 118);
+                    bb = ByteBuffer.allocate(3 + strBytes.length);
+                    bb.put((byte) 118);
                     bb.put(pack_unsigned(strBytes.length, 2));
                 }
             } else {
                 if (strBytes.length < 256) { // SMALL
-                    bb = ByteBuffer.allocate(2+strBytes.length);
-                    bb.put( (byte) 115);
+                    bb = ByteBuffer.allocate(2 + strBytes.length);
+                    bb.put((byte) 115);
                     bb.put(pack_unsigned(strBytes.length, 1));
                 } else {
-                    bb = ByteBuffer.allocate(3+strBytes.length);
-                    bb.put( (byte) 100);
+                    bb = ByteBuffer.allocate(3 + strBytes.length);
+                    bb.put((byte) 100);
                     bb.put(pack_unsigned(strBytes.length, 2));
                 }
             }
@@ -340,16 +340,16 @@ public class Response   {
     // Value: 0~2^31-1;
     private byte[] pack_unsigned(Integer value, Integer len) {
         ByteBuffer bb = ByteBuffer.allocate(len);
-        for(Integer i=0; i<len; i++) {
-            bb.put( (byte) (value >> (8*(len-i-1)) & 0xff) );
+        for (Integer i = 0; i < len; i++) {
+            bb.put((byte) (value >> (8 * (len - i - 1)) & 0xff));
         }
         return bb.array();
     }
 
     private byte[] pack_unsigned(Long value, Integer len) {
         ByteBuffer bb = ByteBuffer.allocate(len);
-        for(Integer i=0; i<len; i++) {
-            bb.put( (byte) (value >> (8*(len-i-1)) & 0xff) );
+        for (Integer i = 0; i < len; i++) {
+            bb.put((byte) (value >> (8 * (len - i - 1)) & 0xff));
         }
         return bb.array();
     }

@@ -11,10 +11,8 @@ public class Options {
     int packet = 4;
 
     int compressed = 0;
-
-    private int buffer_size = 16 * 1024;
-
     String method = "--use_stdio";
+    private int buffer_size = 16 * 1024;
 
     public Options(final String[] args) {
         for (String s : args) {

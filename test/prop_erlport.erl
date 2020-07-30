@@ -51,7 +51,7 @@ prop_echo_python() ->
 prop_echo_java() ->
     ?ALL(Term, supported_types(),
          begin
-            #{java:= Pid} = get(state),
+             #{java := Pid} = get(state),
              Ret = erlport:call(Pid, 'Echo', 'echo', [Term], []),
              Ret = Term, true
          end).

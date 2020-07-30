@@ -45,6 +45,7 @@ public class Request {
         }
 
         Tuple request = (Tuple) rawTerm;
+        //System.err.printf("[JAVA] Got: %s\n", request);
         Atom type = (Atom) request.get(0);
         switch (type.value) {
             case "C":
@@ -67,7 +68,7 @@ public class Request {
 
     private Object parse_tag_terms() throws Exception {
         int tag = parse_unsigned(1).intValue() & 0xff;
-        // System.err.printf("Parsing tag %d...\n", tag);
+        //System.err.printf("Parsing tag %d...\n", tag);
 
         // SMALL_INTEGER
         if (tag == 97) {

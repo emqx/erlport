@@ -28,7 +28,6 @@ public class JPort {
         channel = new Channel(options);
         ReadThread readThread = new ReadThread(channel);
         executorService.submit(readThread);
-        System.err.println("JPort started");
     }
 
     /**
@@ -40,27 +39,20 @@ public class JPort {
      */
     public static Object call(CallMessage message, long timeout) throws Exception {
 
-//        WriteThread writeThread = new WriteThread(channel, message);
-//        Future<Object> future = executorService.submit(writeThread);
-//        Thread.sleep(1000);
-//        Object o = future.get();
-//        System.err.println(LocalDateTime.now() + " CALL  MessageId:" + message.getId() + " :" + o);
-
         final UUID uuid = UUID.randomUUID();
         JPort.REQUEST_MAP.put(message.getId(), uuid);
         channel.write(message);
 
-        System.err.println("Waiting for call......");
+        //System.err.println("[JAVA] Waiting for call......");
         synchronized (JPort.REQUEST_MAP.get(message.getId())) {
             JPort.REQUEST_MAP.get(message.getId()).wait(timeout);
         }
-        System.err.println("Unlock......");
+        //System.err.println("[JAVA] Unlock......");
 
         Object result = JPort.RESULT_MAP.get(message.getId());
         JPort.REQUEST_MAP.remove(message.getId());
         JPort.RESULT_MAP.remove(message.getId());
-        System.err.println("REQUEST_MAP A " + LocalDateTime.now() + " MessageId:" + message.getId() + " Lock:" + uuid.toString() + " Result is = " + result);
-
-        return null;
+        //System.err.println("[JAVA] REQUEST_MAP A " + LocalDateTime.now() + " MessageId:" + message.getId() + " Lock:" + uuid.toString() + " Result is = " + result);
+        return result;
     }
 }

@@ -30,16 +30,16 @@ public class WriteThread implements Callable<Object> {
             final UUID uuid = UUID.randomUUID();
             JPort.REQUEST_MAP.put(message.getId(), uuid);
             channel.write(message);
-            System.err.println("Waiting for......");
+            //System.err.println("Waiting for......");
             synchronized (JPort.REQUEST_MAP.get(message.getId())) {
                 JPort.REQUEST_MAP.get(message.getId()).wait(4000);
             }
-            System.err.println("Unlock......");
+            //System.err.println("Unlock......");
 
             Object result = JPort.RESULT_MAP.get(message.getId());
             JPort.REQUEST_MAP.remove(message.getId());
             JPort.RESULT_MAP.remove(message.getId());
-            System.err.println("REQUEST_MAP A " + LocalDateTime.now() + " MessageId:" + message.getId() + " Lock:" + uuid.toString() + " Result is = " + result);
+            //System.err.println("REQUEST_MAP A " + LocalDateTime.now() + " MessageId:" + message.getId() + " Lock:" + uuid.toString() + " Result is = " + result);
 
             return result;
         } catch (Exception e) {

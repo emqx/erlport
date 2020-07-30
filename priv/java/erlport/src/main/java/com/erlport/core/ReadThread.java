@@ -5,7 +5,9 @@ import com.erlport.erlang.term.Binary;
 import com.erlport.erlang.term.Tuple;
 import com.erlport.proto.*;
 
+import java.awt.*;
 import java.io.EOFException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -30,10 +32,10 @@ public class ReadThread extends Thread {
     public void run() {
         for (; ; ) {
             try {
+                //System.err.println("[JAVA] try read a message\n");
                 Request request = channel.read();
+                //System.err.println("[JAVA] Read:" + request + "\n");
                 try {
-                    System.err.println("Request :" + request.rawTerm);
-
                     if (request.type == RequestType.CALL) {
                         Class<?> clazz = Class.forName(request.classname.value);
                         Object instance = classCache.get(clazz);
@@ -44,12 +46,27 @@ public class ReadThread extends Thread {
                         Class<?>[] classArgs = new Class[request.args.length];
                         Arrays.fill(classArgs, Object.class);
                         Method method = clazz.getMethod(request.methodName.value, classArgs);
-                        Object result = method.invoke(instance, request.args);
 
-                        if (result == null) {
-                            result = new Atom("ok");
-                        }
-                        channel.write(Response.success(request.requestId, result));
+                        Object finalInstance = instance;
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Object result = null;
+                                try {
+                                    result = method.invoke(finalInstance, request.args);
+                                    if (result == null) {
+                                        result = new Atom("ok");
+                                    }
+                                    channel.write(Response.success(request.requestId, result));
+                                } catch (IllegalAccessException e) {
+                                    e.printStackTrace();
+                                } catch (InvocationTargetException e) {
+                                    e.printStackTrace();
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }).start();
 
                     } else if (request.type == RequestType.RESULT) {
                         // [type, Id, Result]
@@ -60,11 +77,11 @@ public class ReadThread extends Thread {
                             Integer id = (Integer) tuple.get(1);
                             if (JPort.REQUEST_MAP.get(id) != null) {
                                 JPort.RESULT_MAP.put(id, tuple.get(2));
-                                System.err.println("X :" + id + " Lock:" + JPort.REQUEST_MAP.get(id).toString());
+                                //System.err.println("X :" + id + " Lock:" + JPort.REQUEST_MAP.get(id).toString());
                                 synchronized (JPort.REQUEST_MAP.get(id)) {
                                     JPort.REQUEST_MAP.get(id).notifyAll();
                                 }
-                                System.err.println("Y :" + id + " Result :" + JPort.RESULT_MAP.get(id));
+                                //System.err.println("Y :" + id + " Result :" + JPort.RESULT_MAP.get(id));
                             }
                         }
                     }

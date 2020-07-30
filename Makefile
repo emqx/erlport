@@ -21,6 +21,9 @@ eunit: compile
 xref:
 	$(REBAR) xref
 
+proper:
+	$(REBAR) proper -d test
+
 dialyzer:
 	$(REBAR) dialyzer
 

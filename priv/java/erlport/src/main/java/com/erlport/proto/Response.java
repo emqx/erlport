@@ -287,22 +287,32 @@ public class Response   {
 
         // ATOM | ATOM_UTF8             (Atom: len=2)
         // SMALL_ATOM | SMALL_ATOM_UTF8 (Atom: len=1)
-        //
-        //  XXX: OUTPOUT ==>>>>> ATOM_UTF8 and SMALL_ATOM_UTF8
         if (obj instanceof Atom) {
             Atom atom = (Atom) obj;
 
             ByteBuffer bb;
-            byte[] strBytes = atom.value.getBytes();
+            byte[] strBytes = atom.value.getBytes(atom.coder);
 
-            if (strBytes.length < 256) { // SMALL
-                bb = ByteBuffer.allocate(2+strBytes.length);
-                bb.put( (byte) 119);
-                bb.put(pack_unsigned(strBytes.length, 1));
+            if (atom.coder.equals("UTF-8")) {
+                if (strBytes.length < 256) { // SMALL
+                    bb = ByteBuffer.allocate(2+strBytes.length);
+                    bb.put( (byte) 119);
+                    bb.put(pack_unsigned(strBytes.length, 1));
+                } else {
+                    bb = ByteBuffer.allocate(3+strBytes.length);
+                    bb.put( (byte) 118);
+                    bb.put(pack_unsigned(strBytes.length, 2));
+                }
             } else {
-                bb = ByteBuffer.allocate(3+strBytes.length);
-                bb.put( (byte) 118);
-                bb.put(pack_unsigned(strBytes.length, 2));
+                if (strBytes.length < 256) { // SMALL
+                    bb = ByteBuffer.allocate(2+strBytes.length);
+                    bb.put( (byte) 115);
+                    bb.put(pack_unsigned(strBytes.length, 1));
+                } else {
+                    bb = ByteBuffer.allocate(3+strBytes.length);
+                    bb.put( (byte) 100);
+                    bb.put(pack_unsigned(strBytes.length, 2));
+                }
             }
 
             bb.put(strBytes);

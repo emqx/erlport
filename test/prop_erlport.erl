@@ -1,4 +1,4 @@
-%%% Copyright (c) 2020, JianBo He <heeejianbo@gmail.com>
+%%% Copyright (c) 2020, EMQ X <https://github.com/emqx>
 %%% All rights reserved.
 %%%
 %%% Redistribution and use in source and binary forms, with or without
@@ -25,82 +25,48 @@
 %%% ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 %%% POSSIBILITY OF SUCH DAMAGE.
 
--module(erlport_SUITE).
+-module(prop_erlport).
 
--compile([export_all, nowarn_export_all]).
+-include_lib("proper/include/proper.hrl").
+
+-define(ALL(Vars, Types, Exprs),
+        ?SETUP(fun() ->
+            State = do_setup(),
+            put(state, State),
+            fun() -> do_teardown(State) end
+         end, ?FORALL(Vars, Types, Exprs))).
 
 %%--------------------------------------------------------------------
-%% Setups
+%% Properties
 %%--------------------------------------------------------------------
 
-all() ->
-    [{group, python3}, {group, java}].
+prop_echo_python() ->
+    ?ALL(Term, supported_types(),
+         begin
+            #{python := Pid} = get(state),
+             Ret = erlport:call(Pid, 'echo', 'echo', [Term], []),
+             Ret = Term, true
+         end).
 
-groups() ->
-    Cases = [t_echo, t_rev_call],
-    [{python3, Cases}, {java, Cases}].
+prop_echo_java() ->
+    ?ALL(Term, supported_types(),
+         begin
+            #{java:= Pid} = get(state),
+             Ret = erlport:call(Pid, 'Echo', 'echo', [Term], []),
+             Ret = Term, true
+         end).
 
-init_per_suite(Cfg) ->
-    application:ensure_all_started(erlport),
-    Cfg.
+%%--------------------------------------------------------------------
+%% Helper
+%%--------------------------------------------------------------------
 
-end_per_suite(_) ->
-    application:stop(erlport),
+do_setup() ->
+    {ok, P} = python:start([{python, "python3"}, {python_path, script_path(python3)}]),
+    {ok, J} = java:start([{java, "java"}, {java_path, script_path(java)}]),
+    #{java => J, python => P}. 
+
+do_teardown(_) ->
     ok.
-
-init_per_group(GrpName = python3, Cfg) ->
-    Opts = [{python, atom_to_list(GrpName)},
-            {python_path, script_path(GrpName)}],
-    {ok, Pid} = python:start(Opts),
-    [{pid, Pid}, {mod, 'echo'}, {'fun', echo} | Cfg];
-
-init_per_group(GrpName = java, Cfg) ->
-    Opts = [{java, atom_to_list(GrpName)},
-            {java_path, script_path(GrpName)}],
-    {ok, Pid} = java:start(Opts),
-    [{pid, Pid}, {mod, 'Echo'} | Cfg].
-
-end_per_group(_GrpName, Cfg) ->
-    Pid = proplists:get_value(pid, Cfg),
-    erlport:stop(Pid),
-    ok.
-
-%%--------------------------------------------------------------------
-%% Callback from other languages
-%%--------------------------------------------------------------------
-handle_call(Pid, Req) ->
-    io:format("Pid is :~p Req is :~p~n", [Pid,Req]),
-    Pid ! {resp, Req}.
-
-%%--------------------------------------------------------------------
-%% Cases
-%%--------------------------------------------------------------------
-
-t_echo(Cfg) ->
-    Pid = proplists:get_value(pid, Cfg),
-    Mod = proplists:get_value(mod, Cfg),
-    Arg = x,
-    Arg = erlport:call(Pid, Mod, 'echo', [Arg], []),
-    ok.
-
-t_rev_call(Cfg) ->
-  dbg:tracer(),dbg:p(all,call),
-  dbg:tpl(erlport, incoming_call,x),
-    Pid = proplists:get_value(pid, Cfg),
-    Mod = proplists:get_value(mod, Cfg),
-    _ = erlport:call(Pid, Mod, 'rev_call', [self(), x], []),
-   receive
-       {resp, Resp} ->
-           % Arg = Resp
-           io:format("Call Result:~p~n", [Resp]),
-           Resp
-   after
-       5000 ->
-           error(receiving_timeout)
-   end.
-
-%%--------------------------------------------------------------------
-%% Utils
 
 script_path(GrpName) ->
     ScriptPath = filename:join([code:lib_dir(erlport), "test", atom_to_list(GrpName)]),
@@ -115,3 +81,10 @@ compile(_GrpName = java, Path) ->
     ok;
 compile(_, _) ->
     ok.
+
+%%--------------------------------------------------------------------
+%% Generator
+%%--------------------------------------------------------------------
+
+supported_types() ->
+    oneof([atom(), tuple(), binary(), list(), number()]).

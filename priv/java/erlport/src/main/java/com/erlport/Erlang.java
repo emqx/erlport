@@ -4,7 +4,8 @@ import com.erlport.core.JPort;
 import com.erlport.erlang.term.Atom;
 import com.erlport.msg.CallMessage;
 
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author wangwenhai

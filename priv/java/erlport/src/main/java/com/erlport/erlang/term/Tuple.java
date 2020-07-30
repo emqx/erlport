@@ -6,19 +6,9 @@ public class Tuple {
 
     public Object[] elements;
 
-    public static Tuple forElements(Object[] l) {
-        Tuple t = new Tuple(l.length);
-        t.elements = l;
-        return t;
+    public Tuple(Integer n) {
+        elements = new Object[n];
     }
-
-    public static Tuple two(Object first, Object second) {
-        Tuple t = new Tuple(2);
-        t.set(0, first);
-        t.set(1, second);
-        return t;
-    }
-
     public static Tuple three(Object first, Object second, Object third) {
         Tuple t = new Tuple(3);
         t.set(0, first);
@@ -34,10 +24,6 @@ public class Tuple {
         t.set(2, third);
         t.set(3, fourth);
         return t;
-    }
-
-    public Tuple(Integer n) {
-        elements = new Object[n];
     }
 
     public void set(Integer pos, Object e) {

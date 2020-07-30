@@ -29,6 +29,8 @@
 
 -compile([export_all, nowarn_export_all]).
 
+-import(erlport_test_utils, [script_path/1]).
+
 %%--------------------------------------------------------------------
 %% Setups
 %%--------------------------------------------------------------------
@@ -69,7 +71,6 @@ end_per_group(_GrpName, Cfg) ->
 %% Callback from other languages
 %%--------------------------------------------------------------------
 handle_call(Pid, Req) ->
-    io:format("Pid is :~p Req is :~p~n", [Pid,Req]),
     Pid ! {resp, Req}.
 
 %%--------------------------------------------------------------------
@@ -96,19 +97,3 @@ t_rev_call(Cfg) ->
            error(receiving_timeout)
    end.
 
-%%--------------------------------------------------------------------
-%% Utils
-
-script_path(GrpName) ->
-    ScriptPath = filename:join([code:lib_dir(erlport), "test", atom_to_list(GrpName)]),
-    _ = compile(GrpName, ScriptPath),
-    ScriptPath.
-
-compile(_GrpName = java, Path) ->
-    ErlPortJar = filename:join([code:lib_dir(erlport), "priv", "java", "_pkgs", "erlport.jar"]),
-    ct:pal(os:cmd(lists:concat(["cd ", Path, " && ",
-                                "rm -rf Echo.class && ",
-                                "javac -cp ", ErlPortJar, " Echo.java"]))),
-    ok;
-compile(_, _) ->
-    ok.

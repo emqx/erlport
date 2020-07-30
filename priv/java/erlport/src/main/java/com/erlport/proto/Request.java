@@ -172,20 +172,37 @@ public class Request {
             return parse_big_integer(len);
         }
 
-        // ATOM_UTF8 | ATOM
-        if (tag == 118 || tag == 100) {
+        // ATOM_UTF8 | ATOM  ( UTF-8 | ISO-8859-1)
+        if (tag == 118 || tag == 100 ) {
             Integer len = parse_unsigned(2).intValue();
-            String atomStr = parse_string(len);
-            if (atomStr.equals("true") || atomStr.equals("false")) {
+            String coder;
+            String atomStr;
+            if (tag == 118) {
+                coder = "UTF-8";
+                atomStr = parse_string(len);
+            } else {
+                coder = "ISO-8859-1";
+                atomStr = parse_latin_1_string(len);
+            }
+            if ( atomStr.equals("true") ||  atomStr.equals("false") ) {
                 return new Boolean(atomStr);
             }
-            return new Atom(atomStr);
+            return new Atom(atomStr, coder);
         }
 
-        // SMALL_ATOM_UTF8 | SMALL_ATOM
+        // SMALL_ATOM_UTF8 | SMALL_ATOM (UTF-8 | ISO-8859-1)
         if (tag == 119 || tag == 115) {
             Integer len = parse_unsigned(1).intValue();
-            return new Atom(parse_string(len));
+            String coder;
+            String atomStr;
+            if (tag == 118) {
+                coder = "UTF-8";
+                atomStr = parse_string(len);
+            } else {
+                coder = "ISO-8859-1";
+                atomStr = parse_latin_1_string(len);
+            }
+            return new Atom(atomStr, coder);
         }
 
         // REFERENCE
@@ -265,8 +282,14 @@ public class Request {
         return new BigInteger(sign, bytes);
     }
 
-    private String parse_string(Integer len) {
-        String s = new String(bytes, pos, len);
+    private String parse_string(Integer len) throws Exception {
+        String s = new String(bytes, pos, len, "UTF-8");
+        pos = pos + len;
+        return s;
+    }
+
+    private String parse_latin_1_string(Integer len) throws Exception {
+        String s = new String(bytes, pos, len, "ISO-8859-1");
         pos = pos + len;
         return s;
     }

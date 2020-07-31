@@ -15,8 +15,12 @@ public class Atom {
         this.value = v;
     }
 
+
     @Override
     public String toString() {
-        return String.format("Atom(\"%s\")", value);
+        return "Atom{" +
+                "coder='" + coder + '\'' +
+                ", value='" + value + '\'' +
+                '}';
     }
 }

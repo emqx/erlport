@@ -4,6 +4,7 @@ import com.erlport.erlang.term.*;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -13,57 +14,53 @@ import java.util.*;
  */
 public class Request {
 
-    // ----- ParseState
-    private Integer pos;
-    private byte[] bytes;
     public Object rawTerm;
-    // ----- End
-
     // ----- Properties
     public RequestType type;
     public Integer requestId;
+    // ----- End
     public Atom classname;
     public Atom methodName;
     public Object[] args;
-
-    public Object message;
-    public Object context;
+    private Object message;
+    private Object context;
+    // ----- ParseState
+    private Integer pos;
+    private byte[] bytes;
     // ----- End
 
 
-    public Request() {
-    }
-
-    public Request(byte[] bytes) throws Exception {
+    Request(byte[] bytes) throws Exception {
         this.pos = 0;
         this.bytes = bytes;
-
         if (bytes[pos++] == -125) { // 131 ===> Term
             rawTerm = parse_tag_terms();
+            Tuple request = (Tuple) rawTerm;
+            if (request != null) {
+                Atom type = (Atom) request.get(0);
+                switch (type.value) {
+                    case "C":
+                        this.type = RequestType.CALL;
+                        this.requestId = (Integer) request.get(1);
+                        this.classname = (Atom) request.get(2);
+                        this.methodName = (Atom) request.get(3);
+                        this.args = ((List) request.get(4)).toArray();
+                        break;
+                    case "M":
+                        this.type = RequestType.MESSAGE;
+                        this.message = request.get(1);
+                        break;
+                    case "r":
+                        this.type = RequestType.RESULT;
+                        this.message = request.get(1);
+                        break;
+                }
+            }
         } else if (bytes[0] == 80) { // 80 ===> Compressed
             // TODO:
         }
 
-        Tuple request = (Tuple) rawTerm;
-        //System.err.printf("[JAVA] Got: %s\n", request);
-        Atom type = (Atom) request.get(0);
-        switch (type.value) {
-            case "C":
-                this.type = RequestType.CALL;
-                this.requestId = (Integer) request.get(1);
-                this.classname = (Atom) request.get(2);
-                this.methodName = (Atom) request.get(3);
-                this.args = ((List) request.get(4)).toArray();
-                break;
-            case "M":
-                this.type = RequestType.MESSAGE;
-                this.message = request.get(1);
-                break;
-            case "r":
-                this.type = RequestType.RESULT;
-                this.message = request.get(1);
-                break;
-        }
+
     }
 
     private Object parse_tag_terms() throws Exception {
@@ -174,7 +171,7 @@ public class Request {
         }
 
         // ATOM_UTF8 | ATOM  ( UTF-8 | ISO-8859-1)
-        if (tag == 118 || tag == 100 ) {
+        if (tag == 118 || tag == 100) {
             Integer len = parse_unsigned(2).intValue();
             String coder;
             String atomStr;
@@ -185,8 +182,8 @@ public class Request {
                 coder = "ISO-8859-1";
                 atomStr = parse_latin_1_string(len);
             }
-            if ( atomStr.equals("true") ||  atomStr.equals("false") ) {
-                return new Boolean(atomStr);
+            if (atomStr.equals("true") || atomStr.equals("false")) {
+                return Boolean.valueOf(atomStr);
             }
             return new Atom(atomStr, coder);
         }
@@ -283,14 +280,14 @@ public class Request {
         return new BigInteger(sign, bytes);
     }
 
-    private String parse_string(Integer len) throws Exception {
-        String s = new String(bytes, pos, len, "UTF-8");
+    private String parse_string(Integer len) {
+        String s = new String(bytes, pos, len, StandardCharsets.UTF_8);
         pos = pos + len;
         return s;
     }
 
-    private String parse_latin_1_string(Integer len) throws Exception {
-        String s = new String(bytes, pos, len, "ISO-8859-1");
+    private String parse_latin_1_string(Integer len) {
+        String s = new String(bytes, pos, len, StandardCharsets.ISO_8859_1);
         pos = pos + len;
         return s;
     }

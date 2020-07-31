@@ -25,6 +25,7 @@ public class CallMessage extends Message {
         }
         setId(atomicInteger.incrementAndGet());
     }
+
     public Atom getModule() {
         return module;
     }

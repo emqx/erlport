@@ -62,18 +62,14 @@ public class Channel {
             tuple.set(3, callMessage.getFunction());
             tuple.set(4, callMessage.getArgs());
             tuple.set(5, new Atom("L"));
-
-            //System.err.printf("Wrote tuple: %s\n", tuple);
             writeData(serialize(tuple));
         }
         if (message instanceof ResultMessage) {
             ResultMessage resultMessage = new ResultMessage();
             tuple = new Tuple(3);
             tuple.set(0, resultMessage.getType());
-            tuple.set(1, resultMessage.getResult());
-            tuple.set(2, new Atom("L"));
-
-            //System.err.printf("Wrote tuple: %s\n", tuple);
+            tuple.set(1, resultMessage.getId());
+            tuple.set(2, resultMessage.getResult());
             writeData(serialize(tuple));
         }
     }
@@ -123,8 +119,6 @@ public class Channel {
             }
             done = done + got;
         }
-
-        // System.err.printf("ReadStream: %d, bytes: %s\n", b.length, Arrays.toString(b));
         return b;
     }
 

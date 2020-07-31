@@ -27,28 +27,26 @@ public class Reader extends Thread {
     public void run() {
         for (; ; ) {
             try {
-                //System.err.println("[Java] Try read.........");
                 Request request = channel.read();
-                //System.err.println("[Java] Read request:" + request);
                 try {
                     if (request == null) {
                         continue;
                     }
                     if (request.type == RequestType.CALL) {
-                        Class<?> clazz = Class.forName(request.classname.value);
-                        Object instance = classCache.get(clazz);
-                        if (instance == null) {
-                            instance = clazz.newInstance();
-                            classCache.put(clazz, instance);
-                        }
-                        Class<?>[] classArgs = new Class[request.args.length];
-                        Arrays.fill(classArgs, Object.class);
-                        Method method = clazz.getMethod(request.methodName.value, classArgs);
-
-                        Object finalInstance = instance;
-                        JPort.executorService.execute(() -> {
+                        JPort.executorService.submit(() -> {
                             try {
-                                Object result = method.invoke(finalInstance, request.args);
+                                Class<?> clazz = Class.forName(request.classname.value);
+                                Object instance = classCache.get(clazz);
+                                if (instance == null) {
+                                    instance = clazz.newInstance();
+                                    classCache.put(clazz, instance);
+                                }
+                                Class<?>[] classArgs = new Class[request.args.length];
+                                Arrays.fill(classArgs, Object.class);
+                                Method method = clazz.getMethod(request.methodName.value, classArgs);
+
+                                Object result = method.invoke(instance, request.args);
+
                                 if (result == null) {
                                     result = new Atom("ok");
                                 }
@@ -61,18 +59,14 @@ public class Reader extends Thread {
                     } else if (request.type == RequestType.RESULT) {
                         // [type, Id, Result]
                         // [Atom("r"), 2, Tuple{elements=[Atom("resp"), Atom("x")]}]
-
                         Tuple tuple = (Tuple) request.rawTerm;
                         if (tuple.length() == 3) {
                             Integer id = (Integer) tuple.get(1);
                             if (JPort.REQUEST_MAP.get(id) != null) {
                                 JPort.RESULT_MAP.put(id, tuple.get(2));
                                 synchronized (JPort.REQUEST_MAP.get(id)) {
-                                    //System.err.printf("[Java] Notify %s\n", id);
                                     JPort.REQUEST_MAP.get(id).notifyAll();
                                 }
-                            } else {
-                                //System.err.printf("[Java] Not found for %s\n", tuple);
                             }
                         }
                     }

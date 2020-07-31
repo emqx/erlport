@@ -44,10 +44,7 @@ public class JPort {
         final UUID uuid = UUID.randomUUID();
         JPort.REQUEST_MAP.put(message.getId(), uuid);
         channel.write(message);
-
-        //System.err.printf("[Java] Waiting lock: %s\n", message.getId());
         synchronized (JPort.REQUEST_MAP.get(message.getId())) {
-            //System.err.printf("[Java] Got lock: %s\n", message.getId());
             JPort.REQUEST_MAP.get(message.getId()).wait(timeout);
         }
         Object result = JPort.RESULT_MAP.get(message.getId());

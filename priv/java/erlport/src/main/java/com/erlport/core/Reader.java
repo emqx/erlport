@@ -33,27 +33,26 @@ public class Reader extends Thread {
                         continue;
                     }
                     if (request.type == RequestType.CALL) {
-                        Class<?> clazz = Class.forName(request.classname.value);
-                        Object instance = classCache.get(clazz);
-                        if (instance == null) {
-                            instance = clazz.newInstance();
-                            classCache.put(clazz, instance);
-                        }
-                        Class<?>[] classArgs = new Class[request.args.length];
-                        Arrays.fill(classArgs, Object.class);
-                        Method method = clazz.getMethod(request.methodName.value, classArgs);
 
-                        Object result = method.invoke(instance, request.args);
-
-                        if (result == null) {
-                            result = new Atom("ok");
-                        }
-
-                        Object finalResult = result;
-                        JPort.executorService.execute(() -> {
+                        JPort.executorService.submit(() -> {
                             try {
-                                channel.write(Response.success(request.requestId, finalResult));
+                                Class<?> clazz = Class.forName(request.classname.value);
+                                Object instance = classCache.get(clazz);
+                                if (instance == null) {
+                                    instance = clazz.newInstance();
+                                    classCache.put(clazz, instance);
+                                }
+                                Class<?>[] classArgs = new Class[request.args.length];
+                                Arrays.fill(classArgs, Object.class);
+                                Method method = clazz.getMethod(request.methodName.value, classArgs);
 
+                                Object result = method.invoke(instance, request.args);
+
+                                if (result == null) {
+                                    result = new Atom("ok");
+                                }
+
+                                channel.write(Response.success(request.requestId, result));
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }

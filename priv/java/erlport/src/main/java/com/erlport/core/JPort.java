@@ -14,7 +14,7 @@ import java.util.concurrent.Executors;
  * @date 2020/7/15
  */
 public class JPort {
-    static final ExecutorService executorService = Executors.newFixedThreadPool(16);
+    static final ExecutorService executorService = Executors.newCachedThreadPool();
     // K: MessageId V: UUID Lock
     static final ConcurrentHashMap<Integer, Object> REQUEST_MAP = new ConcurrentHashMap<>();
     // K: MessageId V: Call Result

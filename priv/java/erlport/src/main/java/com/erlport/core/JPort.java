@@ -29,8 +29,7 @@ public class JPort {
         Options options = new Options(args);
         channel = new Channel(options);
         Reader reader = new Reader(channel);
-        reader.start();
-        //executorService.submit(reader);
+        executorService.submit(reader);
     }
 
     /**
@@ -45,11 +44,8 @@ public class JPort {
         final UUID uuid = UUID.randomUUID();
         JPort.REQUEST_MAP.put(message.getId(), uuid);
         channel.write(message);
-
-        //System.err.printf("[Java] Waiting lock: %s\n", message.getId());
         synchronized (JPort.REQUEST_MAP.get(message.getId())) {
-            //System.err.printf("[Java] Got lock: %s\n", message.getId());
-            JPort.REQUEST_MAP.get(message.getId()).wait(10);
+            JPort.REQUEST_MAP.get(message.getId()).wait(timeout);
         }
         Object result = JPort.RESULT_MAP.get(message.getId());
         JPort.REQUEST_MAP.remove(message.getId());

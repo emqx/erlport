@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 
 public class Channel {
@@ -88,8 +87,6 @@ public class Channel {
         bb.put(encode_packet_length(bytes.length + 1, opts.packet));
         bb.put((byte) 131);
         bb.put(bytes);
-        System.err.println("[LOG] Serialize message: " + Arrays.toString(bb.array()));
-
         return bb.array();
     }
 
@@ -122,8 +119,6 @@ public class Channel {
             }
             done = done + got;
         }
-
-        // System.err.printf("ReadStream: %d, bytes: %s\n", b.length, Arrays.toString(b));
         return b;
     }
 

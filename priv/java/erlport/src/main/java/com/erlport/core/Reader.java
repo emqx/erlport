@@ -27,14 +27,11 @@ public class Reader extends Thread {
     public void run() {
         for (; ; ) {
             try {
-                //System.err.println("[Java] Try read.........");
                 Request request = channel.read();
-                //System.err.println("[Java] Read request:" + request);
                 try {
                     if (request == null) {
                         continue;
                     }
-                    //System.err.println("[LOG] Begin Read:" + request.rawTerm);
                     if (request.type == RequestType.CALL) {
                         Class<?> clazz = Class.forName(request.classname.value);
                         Object instance = classCache.get(clazz);
@@ -56,7 +53,6 @@ public class Reader extends Thread {
                         JPort.executorService.execute(() -> {
                             try {
                                 channel.write(Response.success(request.requestId, finalResult));
-                                //System.err.println("[LOG] Call result:" + finalResult);
 
                             } catch (Exception e) {
                                 e.printStackTrace();
@@ -67,18 +63,13 @@ public class Reader extends Thread {
                         // [type, Id, Result]
                         // [Atom("r"), 2, Tuple{elements=[Atom("resp"), Atom("x")]}]
                         Tuple tuple = (Tuple) request.rawTerm;
-                        //System.err.println("[LOG] Call Invoke 'r':" + request.rawTerm);
                         if (tuple.length() == 3) {
                             Integer id = (Integer) tuple.get(1);
                             if (JPort.REQUEST_MAP.get(id) != null) {
                                 JPort.RESULT_MAP.put(id, tuple.get(2));
                                 synchronized (JPort.REQUEST_MAP.get(id)) {
-                                    //System.err.printf("[Java] Notify %s\n", id);
                                     JPort.REQUEST_MAP.get(id).notifyAll();
-                                    //System.err.println("[LOG] Call Invoke notify:" + request.rawTerm);
                                 }
-                            } else {
-                                //System.err.printf("[Java] Not found for %s\n", tuple);
                             }
                         }
                     }

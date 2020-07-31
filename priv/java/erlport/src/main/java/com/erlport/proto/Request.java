@@ -193,7 +193,7 @@ public class Request {
             Integer len = parse_unsigned(1).intValue();
             String coder;
             String atomStr;
-            if (tag == 118) {
+            if (tag == 119) {
                 coder = "UTF-8";
                 atomStr = parse_string(len);
             } else {
@@ -271,9 +271,9 @@ public class Request {
 
         sign = sign == 0 ? 1 : -1;
 
-        byte[] bytes = new byte[len];
+        byte[] dn = new byte[len];
         for (Integer i = 0; i < len; i++) {
-            bytes[len - i - 1] = bytes[pos + i];
+            dn[len - i - 1] = bytes[pos + i];
         }
 
         pos = pos + len;
@@ -295,9 +295,7 @@ public class Request {
     @Override
     public String toString() {
         return "Request{" +
-                "pos=" + pos +
-                //", bytes=" + Arrays.toString(bytes) +
-                ", rawTerm=" + rawTerm +
+                "rawTerm=" + rawTerm +
                 ", type=" + type +
                 ", requestId=" + requestId +
                 ", classname=" + classname +

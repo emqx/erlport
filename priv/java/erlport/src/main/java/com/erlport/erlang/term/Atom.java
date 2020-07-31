@@ -15,12 +15,10 @@ public class Atom {
         this.value = v;
     }
 
-
     @Override
     public String toString() {
         return "Atom{" +
-                "coder='" + coder + '\'' +
-                ", value='" + value + '\'' +
+                "value='" + value + '\'' +
                 '}';
     }
 }

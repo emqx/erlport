@@ -27,7 +27,9 @@ public class Reader extends Thread {
     public void run() {
         for (; ; ) {
             try {
+                //System.err.println("[Java] Try read.........");
                 Request request = channel.read();
+                //System.err.println("[Java] Read request:" + request);
                 try {
                     if (request == null) {
                         continue;
@@ -66,8 +68,11 @@ public class Reader extends Thread {
                             if (JPort.REQUEST_MAP.get(id) != null) {
                                 JPort.RESULT_MAP.put(id, tuple.get(2));
                                 synchronized (JPort.REQUEST_MAP.get(id)) {
+                                    //System.err.printf("[Java] Notify %s\n", id);
                                     JPort.REQUEST_MAP.get(id).notifyAll();
                                 }
+                            } else {
+                                //System.err.printf("[Java] Not found for %s\n", tuple);
                             }
                         }
                     }

@@ -79,7 +79,7 @@ matix() ->
     [ {100, 1, 1024}        %% 100KB
     , {100, 100, 1024}      %% 10MB
     , {100, 1000, 1024}     %% 100MB
-    , {100, 10000, 1024}    %% 1000MB
+    %, {100, 10000, 1024}    %% 1000MB
 
     , {100, 100, 32}        %% 312KB
     , {100, 100, 64}        %% 624KB
@@ -92,7 +92,10 @@ matix() ->
 t_concurrency_echo(Cfg) ->
     Pid = proplists:get_value(pid, Cfg),
     Mod = proplists:get_value(mod, Cfg),
-    [shot_one_case(M, Pid, Mod) || M <- matix()].
+    Res = [{M, shot_one_case(M, Pid, Mod)} || M <- matix()],
+    ?LOG("\n\n"),
+    ?LOG("Statistics: \n"),
+    format_result(Res).
 
 shot_one_case({ProcCnt, ReqCnt, S}, Pid, Mod) ->
     Throughput = ProcCnt * ReqCnt * S,
@@ -100,10 +103,9 @@ shot_one_case({ProcCnt, ReqCnt, S}, Pid, Mod) ->
     Bin = chaos_bin(S),
     P = self(),
     ?LOG("\n"),
-    ?LOG("=====================================\n"),
-    ?LOG("-- Start a concurrency throughput testing 1\n"),
+    ?LOG("===============================================\n"),
     ?LOG("--  Request: ~s, size: ~s Total: ~s\n", [format_cnt(RequestCnt), format_byte(S), format_byte(Throughput)]),
-    ?LOG("-- Runing...\n"),
+    ?LOG("--\n"),
     statistics(runtime),
     statistics(wall_clock),
     [spawn(fun() ->
@@ -123,13 +125,11 @@ shot_one_case({ProcCnt, ReqCnt, S}, Pid, Mod) ->
     Clt(ProcCnt*ReqCnt),
     {_, Time1} = statistics(runtime),
     {_, Time2} = statistics(wall_clock),
-    ?LOG("-- Done\n--\n"),
-    ?LOG("-- Consume CPU time: ~s, Procs time: ~s\n", [format_ts(Time1), format_ts(Time2)]),
-    ?LOG("--\n"),
-    ?LOG("--\n"),
+    ?LOG("--   CPU time: ~s, Procs time: ~s\n", [format_ts(Time1), format_ts(Time2)]),
     ?LOG("--        TPS: ~s/s (~s/s) \n", [format_cnt(1000*RequestCnt/Time1), format_cnt(1000*RequestCnt/Time2)]),
     ?LOG("-- Throughput: ~s/s (~s/s) \n", [format_byte(1000*Throughput/Time1), format_byte(1000*Throughput/Time2)]),
-    ?LOG("=====================================").
+    ?LOG("===============================================\n"),
+    {1000*RequestCnt/Time2, 1000*Throughput/Time2}.
 
 %%--------------------------------------------------------------------
 %% Utils
@@ -143,7 +143,6 @@ format_ts(Ms) ->
             lists:flatten(io_lib:format("~.2fs", [Ms/1000]));
         _ ->
             lists:flatten(io_lib:format("~wms", [Ms]))
-            
     end.
 
 format_byte(Byte) ->
@@ -163,3 +162,9 @@ format_cnt(Cnt) ->
         _ ->
             lists:flatten(io_lib:format("~w", [Cnt]))
     end.
+
+format_result([]) ->
+    ok;
+format_result([{{ProcCnt, ReqCnt, S}, {Tps, Throughput}}|Rs]) ->
+    ?LOG("\t~w, ~w, ~w, ~w\n", [ProcCnt*ReqCnt, S, Tps, Throughput]),
+    format_result(Rs).

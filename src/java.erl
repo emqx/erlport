@@ -186,7 +186,7 @@ init_factory(#java_options{java=Java, java_path=JavaPath, use_stdio=UseStdio, pa
             % Binary STDIO
             %%" -u",
             " -cp ", JavaPath,
-            " erlport.CLI",
+            " com.erlport.Main",
             " --packet=", Packet,
             " --", UseStdio,
             " --compressed=", Compressed,

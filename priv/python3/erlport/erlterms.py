@@ -74,6 +74,16 @@ class Atom(bytes):
     def __repr__(self):
         return "Atom(%s)" % super(Atom, self).__repr__()
 
+class Pid:
+    """Erlang pid"""
+
+    def __init__(self, tag, node, idd, serial, creation):
+        self.tag = tag
+        self.node = node
+        self.idd = idd
+        self.serial = serial
+        self.creation = creation
+
 
 class List(list):
     """List which also can be converted to Unicode string."""
@@ -162,6 +172,7 @@ _int2_unpack = Struct(b">H").unpack
 _signed_int4_unpack = Struct(b">i").unpack
 _float_unpack = Struct(b">d").unpack
 _double_bytes_unpack = Struct(b"BB").unpack
+_byte_unpack = Struct(b">B").unpack
 _int4_byte_unpack = Struct(b">IB").unpack
 
 
@@ -199,6 +210,7 @@ def decode_term(string,
     if not string:
         raise IncompleteData(string)
     tag = string[0]
+
     if tag == 100 or tag == 119:
         # ATOM_EXT, SMALL_ATOM_UTF8_EXT
         ln = len(string)
@@ -290,6 +302,22 @@ def decode_term(string,
             raise IncompleteData(string)
         f, = float_unpack(string[1:9])
         return f, string[9:]
+    elif tag in b"gX":
+        node, tail = decode_term(string[1:])
+        if tag == 103 and len(tail) < 9:
+            raise IncompleteData(string)
+        elif tag == 88 and len(tail) < 12:
+            raise IncompleteData(string)
+        idd, = int4_unpack(tail[0:4])
+        serial, = int4_unpack(tail[4:8])
+        if tag == 103:
+            creation, = _byte_unpack(tail[8:9])
+            tail2 = tail[9:]
+        elif tag == 88:
+            creation, = int4_unpack(tail[8:12])
+            tail2 = tail[12:]
+        return Pid(tag, node, idd, serial, creation), tail2
+
     elif tag in b"no":
         # SMALL_BIG_EXT, LARGE_BIG_EXT
         if tag == 110:
@@ -315,6 +343,7 @@ def decode_term(string,
     raise ValueError("unsupported data: %r" % (string,))
 
 _int4_pack = Struct(b">I").pack
+_byte_pack = Struct('>B').pack
 _char_int4_pack = Struct(b">cI").pack
 _char_int2_pack = Struct(b">cH").pack
 _char_signed_int4_pack = Struct(b">ci").pack
@@ -415,6 +444,13 @@ def encode_term(term,
         raise ValueError("invalid integer value with length: %r" % length)
     elif t is float:
         return char_float_pack(b"F", term)
+    elif t is Pid:
+        header = _byte_pack(term.tag)
+        if term.tag == 103:
+            creation = _byte_pack(term.creation)
+        else:
+            creation = _int4_pack(term.creation)
+        return header + encode_term(term.node) + _int4_pack(term.idd) + _int4_pack(term.serial) + creation
     elif term is None:
         return b"d\0\11undefined"
     elif t is OpaqueObject:

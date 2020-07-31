@@ -361,8 +361,8 @@ send_request2({call, Module, Function, Args, _Options}, From, Timeout,
         State=#state{compressed=Compressed})
         when is_atom(Module) andalso is_atom(Function) andalso is_list(Args) ->
     Id = next_message_id(State),
-    Data = erlport_utils:encode_term({'C', Id, Module, Function,
-        erlport_utils:prepare_list(Args)}, Compressed),
+    ReqM = {'C', Id, Module, Function, erlport_utils:prepare_list(Args)},
+    Data = erlport_utils:encode_term(ReqM, Compressed),
     erlport_utils:send_request(From, Data, Id, State, Timeout);
 send_request2({message, Message}, From, Timeout, State=#state{
         compressed=Compressed}) ->

@@ -1,4 +1,4 @@
-%%% Copyright (c) 2020, JianBo He <heeejianbo@gmail.com>
+%%% Copyright (c) 2020, EMQ X <https://github.com/emqx>
 %%% All rights reserved.
 %%%
 %%% Redistribution and use in source and binary forms, with or without
@@ -25,9 +25,48 @@
 %%% ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 %%% POSSIBILITY OF SUCH DAMAGE.
 
--module(erlport_test_utils).
+-module(prop_erlport).
 
--export([script_path/1]).
+-include_lib("proper/include/proper.hrl").
+
+-define(ALL(Vars, Types, Exprs),
+        ?SETUP(fun() ->
+            State = do_setup(),
+            put(state, State),
+            fun() -> do_teardown(State) end
+         end, ?FORALL(Vars, Types, Exprs))).
+
+%%--------------------------------------------------------------------
+%% Properties
+%%--------------------------------------------------------------------
+
+prop_echo_python() ->
+    ?ALL(Term, supported_types(),
+         begin
+            #{python := Pid} = get(state),
+             Ret = erlport:call(Pid, 'echo', 'echo', [Term], []),
+             Ret = Term, true
+         end).
+
+prop_echo_java() ->
+    ?ALL(Term, supported_types(),
+         begin
+             #{java := Pid} = get(state),
+             Ret = erlport:call(Pid, 'Echo', 'echo', [Term], []),
+             Ret = Term, true
+         end).
+
+%%--------------------------------------------------------------------
+%% Helper
+%%--------------------------------------------------------------------
+
+do_setup() ->
+    {ok, P} = python:start([{python, "python3"}, {python_path, script_path(python3)}]),
+    {ok, J} = java:start([{java, "java"}, {java_path, script_path(java)}]),
+    #{java => J, python => P}. 
+
+do_teardown(_) ->
+    ok.
 
 script_path(GrpName) ->
     ScriptPath = filename:join([code:lib_dir(erlport), "test", atom_to_list(GrpName)]),
@@ -43,3 +82,9 @@ compile(_GrpName = java, Path) ->
 compile(_, _) ->
     ok.
 
+%%--------------------------------------------------------------------
+%% Generator
+%%--------------------------------------------------------------------
+
+supported_types() ->
+    oneof([atom(), tuple(), binary(), list(), number()]).

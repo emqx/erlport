@@ -1,50 +1,37 @@
-JAR_PKG = _pkgs/erlport.jar
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#  * Redistributions of source code must retain the above copyright notice,
+#    this list of conditions and the following disclaimer.
+#  * Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#  * Neither the name of the copyright holders nor the names of its
+#    contributors may be used to endorse or promote products derived from this
+#    software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
-# Source files
-SOURCE_FILES = \
-erlport/terms/Tag.java \
-erlport/terms/Atom.java \
-erlport/terms/Binary.java \
-erlport/terms/Pid.java \
-erlport/terms/Port.java \
-erlport/terms/Reference.java \
-erlport/terms/Tuple.java \
-erlport/Utils.java \
-erlport/Request.java \
-erlport/Response.java \
-erlport/Port.java \
-erlport/CLI.java \
+PACKAGE=_pkgs/erlport.jar
 
-JAVAC = javac
+compile: ${PACKAGE}
 
-JFLAGS = -encoding UTF-8# -Xlint:unchecked
-
-#### Compile settings ####
-
-.PHONY: default build new clean run jar
-
-vpath %.class classes
-vpath %.java src
-
-$(JAR_PKG):
-ifeq (,$(wildcard $(JAR_PKG)))
-	@$(MAKE) build
-	@jar cf $(JAR_PKG) -C classes .
-	@rm -rf classes
-	@echo "Successfully packing erlport.jar"
-endif
-
-build: ensure_dirs $(SOURCE_FILES:.java=.class)
-
-rebuild: clean $(JAR_PKG)
-
-ensure_dirs:
-	@mkdir -p _pkgs
-	@mkdir -p classes
-
-%.class: %.java
-	$(JAVAC) -cp classes -d classes $(JFLAGS) $<
+${PACKAGE}:
+	cd erlport && mvn package
+	cp ./erlport/target/erlport.jar _pkgs/erlport.jar
 
 clean:
-	@rm -rf classes/*
-	@rm -rf $(JAR_PKG)
+	cd erlport && mvn clean
+	rm -rf _pkgs/erlport.jar
+
+.PHONY: compile clean

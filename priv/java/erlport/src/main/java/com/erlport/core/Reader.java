@@ -32,6 +32,8 @@ public class Reader extends Thread {
                     if (request == null) {
                         continue;
                     }
+                    System.err.println("[LOG] Begin Read:" + request.rawTerm);
+
                     if (request.type == RequestType.CALL) {
                         Class<?> clazz = Class.forName(request.classname.value);
                         Object instance = classCache.get(clazz);
@@ -43,14 +45,18 @@ public class Reader extends Thread {
                         Arrays.fill(classArgs, Object.class);
                         Method method = clazz.getMethod(request.methodName.value, classArgs);
 
-                        Object finalInstance = instance;
+                        Object result = method.invoke(instance, request.args);
+
+                        if (result == null) {
+                            result = new Atom("ok");
+                        }
+
+                        Object finalResult = result;
                         JPort.executorService.execute(() -> {
                             try {
-                                Object result = method.invoke(finalInstance, request.args);
-                                if (result == null) {
-                                    result = new Atom("ok");
-                                }
-                                channel.write(Response.success(request.requestId, result));
+                                channel.write(Response.success(request.requestId, finalResult));
+                                System.err.println("[LOG] Call result:" + finalResult);
+
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
@@ -59,14 +65,15 @@ public class Reader extends Thread {
                     } else if (request.type == RequestType.RESULT) {
                         // [type, Id, Result]
                         // [Atom("r"), 2, Tuple{elements=[Atom("resp"), Atom("x")]}]
-
                         Tuple tuple = (Tuple) request.rawTerm;
+                        System.err.println("[LOG] Call Invoke 'r':" + request.rawTerm);
                         if (tuple.length() == 3) {
                             Integer id = (Integer) tuple.get(1);
                             if (JPort.REQUEST_MAP.get(id) != null) {
                                 JPort.RESULT_MAP.put(id, tuple.get(2));
                                 synchronized (JPort.REQUEST_MAP.get(id)) {
                                     JPort.REQUEST_MAP.get(id).notifyAll();
+                                    System.err.println("[LOG] Call Invoke notify:" + request.rawTerm);
                                 }
                             }
                         }

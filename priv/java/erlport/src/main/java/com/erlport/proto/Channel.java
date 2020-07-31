@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 
 public class Channel {
@@ -62,18 +63,14 @@ public class Channel {
             tuple.set(3, callMessage.getFunction());
             tuple.set(4, callMessage.getArgs());
             tuple.set(5, new Atom("L"));
-
-            //System.err.printf("Wrote tuple: %s\n", tuple);
             writeData(serialize(tuple));
         }
         if (message instanceof ResultMessage) {
             ResultMessage resultMessage = new ResultMessage();
             tuple = new Tuple(3);
             tuple.set(0, resultMessage.getType());
-            tuple.set(1, resultMessage.getResult());
-            tuple.set(2, new Atom("L"));
-
-            //System.err.printf("Wrote tuple: %s\n", tuple);
+            tuple.set(1, resultMessage.getId());
+            tuple.set(2, resultMessage.getResult());
             writeData(serialize(tuple));
         }
     }
@@ -91,6 +88,8 @@ public class Channel {
         bb.put(encode_packet_length(bytes.length + 1, opts.packet));
         bb.put((byte) 131);
         bb.put(bytes);
+        System.err.println("[LOG] Serialize message: " + Arrays.toString(bb.array()));
+
         return bb.array();
     }
 

@@ -14,7 +14,7 @@ import java.util.concurrent.Executors;
  * @date 2020/7/15
  */
 public class JPort {
-    static final ExecutorService executorService = Executors.newCachedThreadPool();
+    static final ExecutorService executorService = Executors.newFixedThreadPool(16);
     // K: MessageId V: UUID Lock
     static final ConcurrentHashMap<Integer, Object> REQUEST_MAP = new ConcurrentHashMap<>();
     // K: MessageId V: Call Result
@@ -29,7 +29,8 @@ public class JPort {
         Options options = new Options(args);
         channel = new Channel(options);
         Reader reader = new Reader(channel);
-        executorService.submit(reader);
+        reader.start();
+        //executorService.submit(reader);
     }
 
     /**
@@ -48,7 +49,7 @@ public class JPort {
         //System.err.printf("[Java] Waiting lock: %s\n", message.getId());
         synchronized (JPort.REQUEST_MAP.get(message.getId())) {
             //System.err.printf("[Java] Got lock: %s\n", message.getId());
-            JPort.REQUEST_MAP.get(message.getId()).wait(timeout);
+            JPort.REQUEST_MAP.get(message.getId()).wait(10);
         }
         Object result = JPort.RESULT_MAP.get(message.getId());
         JPort.REQUEST_MAP.remove(message.getId());

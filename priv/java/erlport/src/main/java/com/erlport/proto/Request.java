@@ -224,10 +224,11 @@ public class Request {
     }
 
     // Parse signed integer; bigg-endian; just for 4 bytes
+    // Byte in java have symbol problem, let a byte &0xFF can resolve
     private Integer parse_signed_int32() {
         int c = 0;
         for (int i = 1; i <= 4; i++, pos++) {
-            c = c | (bytes[pos] << ((4 - i) * 8));
+            c = c | ((bytes[pos] & 0xff) << ((4 - i) * 8));
         }
         return c;
     }

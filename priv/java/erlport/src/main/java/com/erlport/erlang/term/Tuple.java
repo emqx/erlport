@@ -9,6 +9,14 @@ public class Tuple {
     public Tuple(Integer n) {
         elements = new Object[n];
     }
+
+    public static Tuple two(Object first, Object second) {
+        Tuple t = new Tuple(2);
+        t.set(0, first);
+        t.set(1, second);
+        return t;
+    }
+
     public static Tuple three(Object first, Object second, Object third) {
         Tuple t = new Tuple(3);
         t.set(0, first);

@@ -2,6 +2,7 @@ package com.erlport.proto;
 
 import com.erlport.erlang.term.Atom;
 import com.erlport.erlang.term.Binary;
+import com.erlport.erlang.term.OpaqueObject;
 import com.erlport.erlang.term.Tuple;
 
 import java.io.*;
@@ -27,23 +28,26 @@ public class Utils {
     }
 
     static Object decodeOpaqueObject(Tuple t) throws Exception {
+        if (t.get(1) instanceof Atom) {
+            Atom lang = (Atom) t.get(1);
+            if (lang.value.equals("java")) {
+                byte[] bytes = ((Binary) t.get(2)).raw;
 
-        if (t.get(1) instanceof Atom && ((Atom) t.get(1)).value.equals("java")) {
+                ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
+                ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
 
-            byte[] bytes = ((Binary) t.get(2)).raw;
-
-            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
-            ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
-
-            return objectInputStream.readObject();
+                return objectInputStream.readObject();
+            } else if (lang.value.equals("erlang")) {
+                return new OpaqueObject(lang, (Binary) t.get(2));
+            } else {
+                throw new Exception("not supported opaque object type: " + lang.value);
+            }
+        } else {
+            return new Exception("invalid opaque object bytes");
         }
-
-        return t;
     }
 
     public static Tuple encodeOpaqueObject(Object obj) throws Exception {
-
-
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
 

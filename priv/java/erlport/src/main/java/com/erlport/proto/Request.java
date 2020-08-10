@@ -112,9 +112,6 @@ public class Request {
                 t.set(i, parse_tag_terms());
             }
 
-            /**
-             *  TODO
-             */
             if (t.elements.length == 3 && t.get(0) instanceof Atom && ((Atom) t.get(0)).value.equals("$erlport.opaque")) {
                 return Utils.decodeOpaqueObject(t);
             }

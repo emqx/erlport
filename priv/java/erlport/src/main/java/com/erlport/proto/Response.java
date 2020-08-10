@@ -63,6 +63,16 @@ public class Response {
     }
 
     private byte[] pack_tag_terms(Object obj) throws Exception {
+        // OpaqueObject
+        if (obj instanceof OpaqueObject) {
+            OpaqueObject oo = (OpaqueObject) obj;
+            if (oo.lang.value.equals("erlang")) {
+                return oo.value.raw;
+            } else {
+                throw new Exception("not support type");
+            }
+        }
+
         // SMALL_INTEGER | INTEGER
         if (obj instanceof Integer) {
             Integer i = (Integer) obj;

@@ -27,13 +27,17 @@ public class Reader extends Thread {
     public void run() {
         for (; ; ) {
             try {
+                System.err.println("[Java] try to read...");
                 Request request = channel.read();
+                System.err.println("[Java] Read: " + request);
                 try {
                     if (request == null) {
                         continue;
                     }
                     if (request.type == RequestType.CALL) {
+                        System.err.println("[Java] Submit call task");
                         JPort.executorService.submit(() -> {
+                            System.err.println("[Java] Invoking: " + request);
                             try {
                                 Class<?> clazz = Class.forName(request.classname.value);
                                 Object instance = classCache.get(clazz);
@@ -55,7 +59,7 @@ public class Reader extends Thread {
                                 e.printStackTrace();
                             }
                         });
-
+                        System.err.println("[Java] Submit compeletly!!!");
                     } else if (request.type == RequestType.RESULT) {
                         // [type, Id, Result]
                         // [Atom("r"), 2, Tuple{elements=[Atom("resp"), Atom("x")]}]
@@ -64,9 +68,12 @@ public class Reader extends Thread {
                             Integer id = (Integer) tuple.get(1);
                             if (JPort.REQUEST_MAP.get(id) != null) {
                                 JPort.RESULT_MAP.put(id, tuple.get(2));
+                                System.err.println("[Java] Feed response....");
                                 synchronized (JPort.REQUEST_MAP.get(id)) {
+                                    System.err.println("[Java] Realse lock....");
                                     JPort.REQUEST_MAP.get(id).notifyAll();
                                 }
+                                System.err.println("[Java] Feed response done....");
                             }
                         }
                     }

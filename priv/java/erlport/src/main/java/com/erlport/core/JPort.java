@@ -44,9 +44,14 @@ public class JPort {
         final UUID uuid = UUID.randomUUID();
         JPort.REQUEST_MAP.put(message.getId(), uuid);
         channel.write(message);
+
+        System.err.println("[Java] Try waiting response....");
         synchronized (JPort.REQUEST_MAP.get(message.getId())) {
+            System.err.println("[Java] Try waiting response.2..");
             JPort.REQUEST_MAP.get(message.getId()).wait(timeout);
+            System.err.println("[Java] Waited, handle response....");
         }
+        System.err.println("[Java] Try waiting done....");
         Object result = JPort.RESULT_MAP.get(message.getId());
         JPort.REQUEST_MAP.remove(message.getId());
         JPort.RESULT_MAP.remove(message.getId());

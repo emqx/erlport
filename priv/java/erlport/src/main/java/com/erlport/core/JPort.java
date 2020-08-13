@@ -4,10 +4,7 @@ import com.erlport.msg.CallMessage;
 import com.erlport.proto.Channel;
 import com.erlport.proto.Options;
 
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
 /**
  * @author wangwenhai
@@ -16,7 +13,7 @@ import java.util.concurrent.Executors;
 public class JPort {
     static final ExecutorService executorService = Executors.newCachedThreadPool();
     // K: MessageId V: UUID Lock
-    static final ConcurrentHashMap<Integer, Object> REQUEST_MAP = new ConcurrentHashMap<>();
+    static final ConcurrentHashMap<Integer, TurboLock> REQUEST_MAP = new ConcurrentHashMap<>();
     // K: MessageId V: Call Result
     static final ConcurrentHashMap<Integer, Object> RESULT_MAP = new ConcurrentHashMap<>();
     // Read Channel
@@ -41,15 +38,13 @@ public class JPort {
      */
     public static Object call(CallMessage message, long timeout) throws Exception {
 
-        final UUID uuid = UUID.randomUUID();
-        JPort.REQUEST_MAP.put(message.getId(), uuid);
+        final Exchanger<Object> exchanger = new Exchanger<>();
+        final TurboLock turboLock = new TurboLock(false, exchanger);
+        JPort.REQUEST_MAP.put(message.getId(), turboLock);
         channel.write(message);
-        synchronized (JPort.REQUEST_MAP.get(message.getId())) {
-            JPort.REQUEST_MAP.get(message.getId()).wait(timeout);
-        }
-        Object result = JPort.RESULT_MAP.get(message.getId());
+        turboLock.setReady(true);
+        Object result = exchanger.exchange(message.getId(), timeout, TimeUnit.MILLISECONDS);
         JPort.REQUEST_MAP.remove(message.getId());
-        JPort.RESULT_MAP.remove(message.getId());
         return result;
     }
 }

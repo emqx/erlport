@@ -55,38 +55,37 @@ public class Reader extends Thread {
                                 e.printStackTrace();
                             }
                         });
-
                     } else if (request.type == RequestType.RESULT) {
                         // [type, Id, Result]
                         // [Atom("r"), 2, Tuple{elements=[Atom("resp"), Atom("x")]}]
                         Tuple tuple = (Tuple) request.rawTerm;
                         if (tuple.length() == 3) {
                             Integer id = (Integer) tuple.get(1);
-                            if (JPort.REQUEST_MAP.get(id) != null) {
-                                JPort.RESULT_MAP.put(id, tuple.get(2));
-                                synchronized (JPort.REQUEST_MAP.get(id)) {
-                                    JPort.REQUEST_MAP.get(id).notifyAll();
-                                }
+                            if (JPort.REQUEST_MAP.get(id) != null &&
+                                    JPort.REQUEST_MAP.get(id).isReady()) {
+                                JPort.REQUEST_MAP.get(id).getExchanger().exchange(tuple.get(2));
                             }
                         }
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    // e.printStackTrace();
                     Binary errDesc = Utils.stringToBinary(Utils.getStackTrace(e));
                     channel.write(Response.failure(request.requestId, errDesc));
                 }
             } catch (Exception e1) {
-                e1.printStackTrace();
+                // e1.printStackTrace();
+
+                if (e1 instanceof EOFException) {
+                    System.err.println("[LOG] System exited with message:" + e1.getMessage());
+                    System.exit(0);
+                }
                 Binary errDesc = Utils.stringToBinary(Utils.getStackTrace(e1));
                 try {
                     channel.write(Response.stop(errDesc));
                 } catch (Exception e2) {
-                    e2.printStackTrace();
+                    // e2.printStackTrace();
                 }
 
-                if (e1 instanceof EOFException) {
-                    System.exit(0);
-                }
 
             }
         }

@@ -27,13 +27,17 @@ public class Reader extends Thread {
     public void run() {
         for (; ; ) {
             try {
+                System.err.println("[Java] Try read.....");
                 Request request = channel.read();
+                System.err.println("[Java] Read.....");
                 try {
                     if (request == null) {
                         continue;
                     }
                     if (request.type == RequestType.CALL) {
+                        System.err.println("[Java] Try Submit.....");
                         JPort.executorService.submit(() -> {
+                            System.err.println("[Java] Executor running.....");
                             try {
                                 Class<?> clazz = Class.forName(request.classname.value);
                                 Object instance = classCache.get(clazz);
@@ -55,6 +59,7 @@ public class Reader extends Thread {
                                 e.printStackTrace();
                             }
                         });
+                        System.err.println("[Java] Submit done.....");
                     } else if (request.type == RequestType.RESULT) {
                         // [type, Id, Result]
                         // [Atom("r"), 2, Tuple{elements=[Atom("resp"), Atom("x")]}]
@@ -66,6 +71,7 @@ public class Reader extends Thread {
                                 if (JPort.REQUEST_MAP.get(id) != null &&
                                         JPort.REQUEST_MAP.get(id).isReady()) {
                                     try {
+                                        System.err.println("[Java] Try exchange data.....");
                                         JPort.REQUEST_MAP.get(id).getExchanger().exchange(tuple.get(2));
                                     } catch (InterruptedException e) {
                                         e.printStackTrace();

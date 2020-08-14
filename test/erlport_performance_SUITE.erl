@@ -42,7 +42,7 @@ all() ->
     [{group, python3}, {group, java}].
 
 groups() ->
-    Cases = [t_concurrency_echo],
+    Cases = [t_concurrency_echo, t_concurrency_rev_call],
     [{python3, Cases}, {java, Cases}].
 
 init_per_suite(Cfg) ->
@@ -57,7 +57,7 @@ init_per_group(GrpName = python3, Cfg) ->
     Opts = [{python, atom_to_list(GrpName)},
             {python_path, script_path(GrpName)}],
     {ok, Pid} = python:start(Opts),
-    [{pid, Pid}, {mod, 'echo'}, {'fun', echo} | Cfg];
+    [{pid, Pid}, {mod, 'echo'} | Cfg];
 
 init_per_group(GrpName = java, Cfg) ->
     Opts = [{java, atom_to_list(GrpName)},
@@ -69,6 +69,12 @@ end_per_group(_GrpName, Cfg) ->
     Pid = proplists:get_value(pid, Cfg),
     erlport:stop(Pid),
     ok.
+
+%%--------------------------------------------------------------------
+%% Callback from other languages
+%%--------------------------------------------------------------------
+handle_call(Pid, Req) ->
+    Pid ! {resp, Req}.
 
 %%--------------------------------------------------------------------
 %% Cases
@@ -92,12 +98,20 @@ matix() ->
 t_concurrency_echo(Cfg) ->
     Pid = proplists:get_value(pid, Cfg),
     Mod = proplists:get_value(mod, Cfg),
-    Res = [{M, shot_one_case(M, Pid, Mod)} || M <- matix()],
+    Res = [{M, shot_one_case(M, Pid, Mod, 'echo')} || M <- matix()],
     ?LOG("\n\n"),
     ?LOG("Statistics: \n"),
     format_result(Res).
 
-shot_one_case({ProcCnt, ReqCnt, S}, Pid, Mod) ->
+t_concurrency_rev_call(Cfg) ->
+    Pid = proplists:get_value(pid, Cfg),
+    Mod = proplists:get_value(mod, Cfg),
+    Res = [{M, shot_one_case(M, Pid, Mod, 'rev_call')} || M <- matix()],
+    ?LOG("\n\n"),
+    ?LOG("Statistics: \n"),
+    format_result(Res).
+
+shot_one_case({ProcCnt, ReqCnt, S}, Pid, Mod, Fun) ->
     Throughput = ProcCnt * ReqCnt * S,
     RequestCnt = ProcCnt * ReqCnt,
     Bin = chaos_bin(S),
@@ -110,16 +124,28 @@ shot_one_case({ProcCnt, ReqCnt, S}, Pid, Mod) ->
     statistics(wall_clock),
     [spawn(fun() ->
         [begin
-             {I, J, _} = erlport:call(Pid, Mod, 'echo', [{I, J, Bin}], []),
-             P ! {echo, I, J}
+             case Fun == 'echo' of
+                 true ->
+                     {I, J, _} = erlport:call(Pid, Mod, Fun, [{I, J, Bin}], []),
+                     P ! {echo, I, J};
+                 _ ->
+                     _  = erlport:call(Pid, Mod, Fun, [self(), {I, J, Bin}], []),
+                     receive
+                         {resp, {I, J, _}} ->
+                             P ! {resp, I, J}
+                     after
+                         5000 ->
+                             error(receiving_timeout)
+                     end
+             end
          end || J <- lists:seq(1, ReqCnt)]
      end) || I <- lists:seq(1, ProcCnt)],
 
     Clt = fun _F(0) -> ok;
               _F(X) ->
                   receive
-                      {echo, _I, _J} -> _F(X-1)
-                  after 1000 -> exit(timeout)
+                      {_, _I, _J} -> _F(X-1)
+                  after 10000 -> exit(timeout)
                   end
           end,
     Clt(ProcCnt*ReqCnt),

@@ -58,14 +58,20 @@ public class Reader extends Thread {
                     } else if (request.type == RequestType.RESULT) {
                         // [type, Id, Result]
                         // [Atom("r"), 2, Tuple{elements=[Atom("resp"), Atom("x")]}]
-                        Tuple tuple = (Tuple) request.rawTerm;
-                        if (tuple.length() == 3) {
-                            Integer id = (Integer) tuple.get(1);
-                            if (JPort.REQUEST_MAP.get(id) != null &&
-                                    JPort.REQUEST_MAP.get(id).isReady()) {
-                                JPort.REQUEST_MAP.get(id).getExchanger().exchange(tuple.get(2));
+
+                      //  JPort.executorService.submit(() -> {
+                            Tuple tuple = (Tuple) request.rawTerm;
+                            if (tuple.length() == 3) {
+                                Integer id = (Integer) tuple.get(1);
+                                if (JPort.REQUEST_MAP.get(id) != null) {
+                                    try {
+                                        JPort.REQUEST_MAP.get(id).getExchanger().exchange(tuple.get(2));
+                                    } catch (InterruptedException e) {
+                                        //e.printStackTrace();
+                                    }
+                                }
                             }
-                        }
+                       // });
                     }
                 } catch (Exception e) {
                     // e.printStackTrace();

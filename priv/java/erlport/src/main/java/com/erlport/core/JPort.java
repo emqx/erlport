@@ -42,7 +42,6 @@ public class JPort {
         final TurboLock turboLock = new TurboLock(false, exchanger);
         JPort.REQUEST_MAP.put(message.getId(), turboLock);
         channel.write(message);
-        turboLock.setReady(true);
         Object result = exchanger.exchange(message.getId(), timeout, TimeUnit.MILLISECONDS);
         JPort.REQUEST_MAP.remove(message.getId());
         return result;

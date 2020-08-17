@@ -55,7 +55,8 @@ public class Reader extends Thread {
                                 e.printStackTrace();
                             }
                         });
-                    } else if (request.type == RequestType.RESULT) {
+                    } else if (request.type == RequestType.RESULT ||
+                               request.type == RequestType.ERROR) {
                         // [type, Id, Result]
                         // [Atom("r"), 2, Tuple{elements=[Atom("resp"), Atom("x")]}]
                         Tuple tuple = (Tuple) request.rawTerm;

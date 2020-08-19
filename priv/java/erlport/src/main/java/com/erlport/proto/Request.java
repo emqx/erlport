@@ -54,13 +54,15 @@ public class Request {
                         this.type = RequestType.RESULT;
                         this.message = request.get(1);
                         break;
+                    case "e":
+                        this.type = RequestType.ERROR;
+                        this.requestId = (Integer) request.get(1);
+                        break;
                 }
             }
         } else if (bytes[0] == 80) { // 80 ===> Compressed
             // TODO:
         }
-
-
     }
 
     private Object parse_tag_terms() throws Exception {

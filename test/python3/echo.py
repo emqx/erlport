@@ -7,6 +7,5 @@ def echo(r):
     return r
 
 def rev_call(pid, r):
-    print(f'pid: {pid}')
     erlang.call(Atom(b'erlport_SUITE'), Atom(b'handle_call'), [pid, r])
     return

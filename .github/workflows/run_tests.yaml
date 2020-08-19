@@ -19,6 +19,8 @@ jobs:
             java-package: jdk
         - name: Code Analysis
           run: |
+            python --version
+            python3 --version
             make xref
             make dialyzer
         - name: Run tests

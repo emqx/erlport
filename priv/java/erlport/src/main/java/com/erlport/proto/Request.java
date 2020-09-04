@@ -277,7 +277,7 @@ public class Request {
         }
 
         pos = pos + len;
-        return new BigInteger(sign, bytes);
+        return new BigInteger(sign, dn);
     }
 
     private String parse_string(Integer len) {

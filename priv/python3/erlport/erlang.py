@@ -130,7 +130,7 @@ class MessageHandler(object):
         # getargspec will raise TypeError if handler is not a function
         args, varargs, _keywords, defaults = getargspec(handler)
         largs = len(args)
-        too_much = largs > 1 and largs - len(default) > 1
+        too_much = largs > 1 and largs - len(defaults) > 1
         too_few = largs == 0 and varargs is None
         if too_much or too_few:
             raise ValueError("expected single argument function: %r"
